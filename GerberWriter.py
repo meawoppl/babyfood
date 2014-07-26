@@ -164,25 +164,27 @@ class GerberWriter:
         # Finish the contour
         self.f.write("G37*\n")
 
-np.zeros((5, 5))
-gw = GerberWriter("gwTest.gbo")
-gw.defineAperature(0.25, True)
-gw.move(0, 0)
-gw.lineTo(10, 0)
-gw.lineTo(10, 10)
-gw.lineTo(0, 10)
-gw.lineTo(0, 0)
 
-gw.flashAt(4, 2)
-gw.flashAt(2, 2)
-gw.flashAt(2, 4)
-gw.flashAt(4, 4)
+if __name__ == "__main__":
+    # Quick test of building functionality
+    gw = GerberWriter("gwTest.gbo")
+    gw.defineAperature(0.25, True)
+    gw.move(0, 0)
+    gw.lineTo(10, 0)
+    gw.lineTo(10, 10)
+    gw.lineTo(0, 10)
+    gw.lineTo(0, 0)
 
-for n, r in enumerate(np.linspace(0, 5, 11)[::-1]):
-    t = np.linspace(0, 2 * np.pi, 7) + r * 0.3
-    xs = r * np.cos(t) + 5
-    ys = r * np.sin(t) + 5
-    gw.writeLayerPolarity(["D", "C"][n % 2])
-    gw.simplePolygon(xs, ys)
+    gw.flashAt(4, 2)
+    gw.flashAt(2, 2)
+    gw.flashAt(2, 4)
+    gw.flashAt(4, 4)
 
-gw.finishGerber()
+    for n, r in enumerate(np.linspace(0, 5, 11)[::-1]):
+        t = np.linspace(0, 2 * np.pi, 7) + r * 0.3
+        xs = r * np.cos(t) + 5
+        ys = r * np.sin(t) + 5
+        gw.writeLayerPolarity(["D", "C"][n % 2])
+        gw.simplePolygon(xs, ys)
+
+    gw.finishGerber()
