@@ -90,7 +90,6 @@ class GerberWriter:
     def _preGraphicsCheck(self):
         self._forceHeader()
         self._forcePolarity()
-        self._checkAperature()
 
     def defineAperature(self, diameter, setAsCurrent=False):
         self._forceHeader()
@@ -116,16 +115,17 @@ class GerberWriter:
         int(aperatureCode[1:])
         self.f.write(aperatureCode + "*\n")
 
-    def finishGerber(self):
+    def finalize(self):
         self.f.write("M02*\n")
         self.f.close()
 
     def _linearMove(self, endX, endY, dCode):
         '''Low level command which encompasses all linear moves,
         This includes light, dark, and flash moves'''
+        self._preGraphicsCheck()
+        print("LM:", endX, endY, dCode)
 
         formattedCoords = fmtCoord(endX, endY, self.xFmt, self.yFmt)
-
         dCodeStr = "D%02i" % dCode
         # Stroke w/ current aperature
         if dCode == 1:
@@ -149,8 +149,9 @@ class GerberWriter:
     def simplePolygon(self, xs, ys):
         # Start "polygon mode" I think this ignores aperatures
         self.f.write("G36*\n")
-
+        print(xs, xs.shape)
         for n, (xC, yC) in enumerate(zip(xs, ys)):
+            print("SP:", n, xC, yC)
             if n == 0:
                 # Move to the start point
                 self._linearMove(xC, yC, 2)
@@ -187,4 +188,4 @@ if __name__ == "__main__":
         gw.writeLayerPolarity(["D", "C"][n % 2])
         gw.simplePolygon(xs, ys)
 
-    gw.finishGerber()
+    gw.finalize()
