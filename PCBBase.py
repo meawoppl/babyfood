@@ -54,49 +54,17 @@ class PCBFeature(TransformableFeature):
         else:
             return torb
 
-boardSides = ["Top", "Bottom"]
-layerTypes = ["Layer", "Mask", "Overlay"]
-defaultLayers = list(itertools.product(boardSides, layerTypes))
 
-layerTupleToExtension = {("Top", "Overlay"): "GTO",
-                         ("Top", "Mask"): "GTS",
-                         ("Top", "Layer"): "GTL",
-                         ("Bottom", "Layer"): "GBL",
-                         ("Bottom", "Mask"): "GBS",
-                         ("Bottom", "Overlay"): "GBO"}
+class RectBoardOutline(PCBFeature):
+    def __init__(self, pt1, pt2):
+        self.pt1 = pt1
+        self.pt2 = pt2
 
+        self.setLayerArtist("Mech", "Mech", self.drawRect)
 
-extensionToColor = {"GTL": "#FF0000", "GBL": "#0000FF",
-                    "GTO": "#FFFF00", "GBO": "#AEB404",
-                    "GTS": "#DF01D7", "GBS": "#DF01D7"}
-
-
-class PCBDrawer:
-    def __init__(self, folderPath, filename="pcb", layers=defaultLayers):
-        if not os.path.isdir(folderPath):
-            os.makedirs(folderPath)
-
-        self.pth = os.path.join(folderPath, filename)
-        self.layerWriters = {}
-        for layerTuple, layerExt in layerTupleToExtension.items():
-            gw = GerberWriter(self.pth + "." + layerExt)
-            gw.writeGerberHeader()
-            gw.writeLayerPolarity()
-            self.layerWriters[layerTuple] = gw
-
-        # Add also teh drill writer
-        dw = DrillWriter(self.pth + ".XLN")
-        self.layerWriters[("Drill", "Drill")] = dw
-
-        self.outlined = False
-
-    def drawOutline(self, pt1, pt2):
-        x1, y1 = pt1
-        x2, y2 = pt2
-
-        gw = GerberWriter(self.pth + ".GKO")
-        gw.writeGerberHeader()
-        gw.writeLayerPolarity()
+    def drawRect(self, gw):
+        x1, y1 = self.pt1
+        x2, y2 = self.pt2
 
         gw.defineAperature(0.1, setAsCurrent=True)
         gw.moveTo(x1, y1)
@@ -107,7 +75,44 @@ class PCBDrawer:
 
         gw.finalize()
 
-        self.outlined = True
+boardSides = ["Top", "Bottom"]
+layerTypes = ["Layer", "Mask", "Overlay"]
+defaultLayers = list(itertools.product(boardSides, layerTypes))
+defaultLayers.append(("Mech", "Mech"))
+
+
+layerTupleToExtension = {("Top", "Overlay"): "GTO",
+                         ("Top", "Mask"): "GTS",
+                         ("Top", "Layer"): "GTL",
+                         ("Bottom", "Layer"): "GBL",
+                         ("Bottom", "Mask"): "GBS",
+                         ("Bottom", "Overlay"): "GBO",
+                         ("Mech", "Mech"): "GKO"}
+
+
+extensionToColor = {"GTL": "#FF0000", "GBL": "#0000FF",
+                    "GTO": "#FFFF00", "GBO": "#AEB404",
+                    "GTS": "#DF01D7", "GBS": "#DF01D7",
+                    "GKO": "#D72424"}
+
+
+class PCBDrawer:
+    def __init__(self, folderPath, filename="pcb", layers=defaultLayers):
+        if not os.path.isdir(folderPath):
+            os.makedirs(folderPath)
+
+        self.pth = os.path.join(folderPath, filename)
+        self.layerWriters = {}
+        for layerTuple in layers:
+            layerExt = layerTupleToExtension[layerTuple]
+            gw = GerberWriter(self.pth + "." + layerExt)
+            gw.writeGerberHeader()
+            gw.writeLayerPolarity()
+            self.layerWriters[layerTuple] = gw
+
+        # Add the drill writer also
+        dw = DrillWriter(self.pth + ".XLN")
+        self.layerWriters[("Drill", "Drill")] = dw
 
     def addFeature(self, pcbFeature):
         for layerTuple, artist in pcbFeature.artists.items():
@@ -135,7 +140,5 @@ class PCBDrawer:
         filestring = " ".join(filenames)
         gerbCallString = "gerbv " + colorString + " " + filestring
 
-        if self.outlined:
-            gerbCallString += " " + self.pth + ".GKO"
         print(gerbCallString)
         os.system(gerbCallString)
