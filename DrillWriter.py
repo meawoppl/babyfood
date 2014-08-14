@@ -22,7 +22,6 @@ class DrillWriter:
 
     def addHole(self, xLoc, yLoc, diameter):
         self._forceSetup()
-        print("Adding hole:", xLoc, yLoc, diameter)
         self.holes[diameter] = self.holes.get(diameter, []) + [(xLoc, yLoc)]
 
     def addHoles(self, xs, ys, ds):
