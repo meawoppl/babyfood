@@ -6,6 +6,7 @@ class DrillWriter:
         else:
             self.f = open(pathOrFlo, "w")
 
+        print("DW Init", pathOrFlo)
         self.holes = {}
         self.formatSetup = False
 
@@ -21,13 +22,18 @@ class DrillWriter:
 
     def addHole(self, xLoc, yLoc, diameter):
         self._forceSetup()
+        print("Adding hole:", xLoc, yLoc, diameter)
         self.holes[diameter] = self.holes.get(diameter, []) + [(xLoc, yLoc)]
+
+    def addHoles(self, xs, ys, ds):
+        for x, y, d in zip(xs, ys, ds):
+            self.addHole(x, y, d)
 
     def writeHeader(self):
         self._forceSetup()
         self.f.write("M48\n")
-        self.f.write(";FILE_FORMAT=%i:%i" % self.fmt)
-        self.f.write(self.units)
+        self.f.write(";FILE_FORMAT=%i:%i\n" % self.fmt)
+        self.f.write(self.units + "\n")
         self.f.write(";TYPE=PLATED\n")
         self.writeTools()
         self.f.write("%\n")
@@ -40,6 +46,10 @@ class DrillWriter:
     def writeTools(self):
         uniqueHoleSizes = self._getUniqueHoleSizes()
 
+        # MRG Hack: gerbv want to see at least 1 tool even if unused
+        if len(uniqueHoleSizes) == 0:
+            uniqueHoleSizes = [1]
+
         for n, holeSize in enumerate(uniqueHoleSizes):
             tCode = "T%i" % (n + 1)
             holeSizeStr = self._fmtFloat(holeSize)
@@ -47,25 +57,26 @@ class DrillWriter:
 
     def _fmtFloat(self, fl, decimal=True):
         b, a = self.fmt
-        fmtString = "%0" + str(b) + "." + str(a) + "f"
+        fmtString = "%+0" + str(b + a + 2) + "." + str(a) + "f"
+        result = fmtString % fl
+        result = result.replace("+", "")
         if not decimal:
-            fmtString = fmtString.replace(".", "")
-        return fmtString
+            result = result.replace(".", "")
+        return result
 
     def writeHoles(self):
         uniqueHoleSizes = self._getUniqueHoleSizes()
 
         for n, holeSize in enumerate(uniqueHoleSizes):
-            self.f.write("T%i" % (n + 1))
-            for xC, yC in self.holes[holeSize]:
-                xStr = "X" + self._fmtFloat(xC, False)
-                yStr = "Y" + self._fmtFloat(yC, False)
+            self.f.write("T%i\n" % (n + 1))
+
+            for xC, yC in self.holes.get(holeSize, []):
+                xStr = "X" + self._fmtFloat(xC)
+                yStr = "Y" + self._fmtFloat(yC)
                 self.f.write(xStr + yStr + "\n")
 
     def finalize(self):
-        self._forceSetup()
         self.writeHeader()
-        self.writeTools()
         self.writeHoles()
         self.f.write("M30\n")
         self.f.close()

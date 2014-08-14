@@ -1,4 +1,6 @@
 import time
+from warnings import warn
+
 import numpy as np
 
 
@@ -23,8 +25,8 @@ def formatFloat(fl, fmt=(4, 4)):
     return intPos + decPos
 
 
-def fmtCoord(xLoc, yLoc, xFmt=(4, 4), yFmt=(4, 4)):
-    return "X" + formatFloat(xLoc, fmt=xFmt) + "Y" + formatFloat(yLoc, fmt=yFmt)
+def fmtCoord(xLoc, yLoc, xFmt=(4, 4), yFmt=(4, 4), xLab="X", yLab="Y"):
+    return xLab + formatFloat(xLoc, fmt=xFmt) + yLab + formatFloat(yLoc, fmt=yFmt)
 
 
 class GerberWriter:
@@ -39,6 +41,9 @@ class GerberWriter:
         self.formatSet = False
         self.polaritySet = False
         self.aperatureCount = 0
+
+        self.currentX = 0
+        self.currentY = 0
 
     def setCoordFmt(self, xFmt=(4, 4), yFmt=(4, 4), units="MM"):
         assert units in ["MM", "IN"], "Units much be IN or MM"
@@ -84,7 +89,7 @@ class GerberWriter:
             self.writeLayerPolarity()
 
     def _checkAperature(self):
-        if self.currentAperatureCode is None:
+        if not self.currentAperatureCode:
             raise RuntimeError("No Aperature defined for current move!")
 
     def _preGraphicsCheck(self):
@@ -123,7 +128,6 @@ class GerberWriter:
         '''Low level command which encompasses all linear moves,
         This includes light, dark, and flash moves'''
         self._preGraphicsCheck()
-        print("LM:", endX, endY, dCode)
 
         formattedCoords = fmtCoord(endX, endY, self.xFmt, self.yFmt)
         dCodeStr = "D%02i" % dCode
@@ -137,7 +141,10 @@ class GerberWriter:
             raise RuntimeError("Unrecognized dCode " + dCodeStr)
         self.f.write(cmdString + "*\n")
 
-    def move(self, newX, newY):
+        self.currentX = endX
+        self.currentY = endY
+
+    def moveTo(self, newX, newY):
         self._linearMove(newX, newY, 2)
 
     def lineTo(self, newX, newY):
@@ -146,12 +153,54 @@ class GerberWriter:
     def flashAt(self, newX, newY):
         self._linearMove(newX, newY, 3)
 
+    def _arcMove(self, endX, endY, cX, cY, direction, dCode=1):
+        # Make estiamates of the radius, and sanity check the coords
+        rEst1 = np.sqrt((self.currentX - cX) ** 2 + (self.currentY - cY) ** 2)
+        rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
+        if np.abs(rEst1 - rEst2) > 0.001:
+            warn("Large deviation in computed radius in arc-move!")
+
+        dCode = "D%02i" % dCode
+
+        if direction == "CW":
+            gCode = "G02"
+        elif direction == "CCW":
+            gCode = "G03"
+        else:
+            raise RuntimeError("Direction must be CW or CCW!")
+
+        xOffset = cX - self.currentX
+        yOffset = cY - self.currentY
+
+        # Assemble the command string
+        cmdString = gCode
+        cmdString += fmtCoord(endX, endY)
+        cmdString += fmtCoord(xOffset, yOffset, xLab="I", yLab="J")
+        cmdString += dCode
+
+        # Set to multi-quadrant mode
+        self.f.write("G75*\n")
+
+        # Write it
+        self.f.write(cmdString + "*\n")
+
+        # Update the internal position tracker
+        self.currentX = endX
+        self.currentY = endY
+
+    def arcLineTo(self, endX, endY, cX, cY, direction):
+        self._arcMove(endX, endY, cX, cY, direction)
+
+    def circle(self, cx, cy, cr):
+        self.moveTo(cx - cr, cy)
+        self.arcLineTo(cx - cr, cy, cx, cy, "CW")
+
     def simplePolygon(self, xs, ys):
-        # Start "polygon mode" I think this ignores aperatures
+        # Start "polygon mode"
+        # MRG Note: I believe this ignores aperatures
         self.f.write("G36*\n")
         print(xs, xs.shape)
         for n, (xC, yC) in enumerate(zip(xs, ys)):
-            print("SP:", n, xC, yC)
             if n == 0:
                 # Move to the start point
                 self._linearMove(xC, yC, 2)
@@ -164,7 +213,6 @@ class GerberWriter:
 
         # Finish the contour
         self.f.write("G37*\n")
-
 
 if __name__ == "__main__":
     # Quick test of building functionality
