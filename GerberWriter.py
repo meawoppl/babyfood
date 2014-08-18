@@ -154,6 +154,7 @@ class GerberWriter:
         self._linearMove(newX, newY, 3)
 
     def _arcMove(self, endX, endY, cX, cY, direction, dCode=1):
+        self._preGraphicsCheck()
         # Make estiamates of the radius, and sanity check the coords
         rEst1 = np.sqrt((self.currentX - cX) ** 2 + (self.currentY - cY) ** 2)
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
@@ -169,6 +170,7 @@ class GerberWriter:
         else:
             raise RuntimeError("Direction must be CW or CCW!")
 
+        # Compute the offset of the circle center point from the starting coordiante
         xOffset = cX - self.currentX
         yOffset = cY - self.currentY
 
@@ -199,7 +201,6 @@ class GerberWriter:
         # Start "polygon mode"
         # MRG Note: I believe this ignores aperatures
         self.f.write("G36*\n")
-        print(xs, xs.shape)
         for n, (xC, yC) in enumerate(zip(xs, ys)):
             if n == 0:
                 # Move to the start point
@@ -211,6 +212,12 @@ class GerberWriter:
         if (xs[0] != xs[-1]) or (ys[0] != ys[-1]):
             self._linearMove(xs[0], ys[0], 1)
 
+        # Finish the contour
+        self.f.write("G37*\n")
+
+    def filledCircle(self, x, y, r):
+        self.f.write("G36*\n")
+        self.circle(x, y, r)
         # Finish the contour
         self.f.write("G37*\n")
 
