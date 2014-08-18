@@ -4,6 +4,21 @@ from PCBBase import PCBFeature, PCBDrawer
 import itertools
 
 
+def hintedCircle(gw, cX, cY, r):
+    gw.defineAperature(0.1, True)
+    gw.circle(cX, cY, r)
+    for theta in np.linspace(0, 2 * np.pi, 50)[:-1]:
+        xP = cX + np.cos(theta) * r
+        yP = cY + np.sin(theta) * r
+        gw.flashAt(xP, yP)
+
+
+def cisDegree(angleInDeg, r=1):
+    x = np.cos((np.pi / 180) * angleInDeg) * r
+    y = np.sin((np.pi / 180) * angleInDeg) * r
+    return x, y
+
+
 class AppolonianTest(PCBFeature):
     def __init__(self, scalar):
         PCBFeature.__init__(self)
@@ -17,7 +32,7 @@ class AppolonianTest(PCBFeature):
         maxR = self.rs.max()
 
         # Rescale everything to mave a max diameter of 3in
-        rescalar = (3 * 25.4) / (2 * maxR)
+        rescalar = (scalar * 25.4) / (2 * maxR)
         self.rs *= rescalar
         self.xs *= rescalar
         self.ys *= rescalar
@@ -29,8 +44,8 @@ class AppolonianTest(PCBFeature):
         self.maxRX = self.xs[maxRIndex]
         self.maxRY = self.ys[maxRIndex]
 
-        maxDrillSize = 0.1 * 2.54
-        minDrillSize = 0.006 * 2.54
+        maxDrillSize = 0.260 * 25.4
+        minDrillSize = 0.006 * 25.4
 
         self.drills = []
         self.cutouts = []
@@ -39,7 +54,9 @@ class AppolonianTest(PCBFeature):
         # Similarly cutout tool diameter is 0.1 in
         # Do some pruning into drills/mechanical routing steps
         for r, x, y in zip(self.rs, self.xs, self.ys):
-            print(r, x, y)
+            if r == self.maxR:
+                print("Skipped max R")
+                continue
             if r < minDrillSize:
                 continue
             if r > maxDrillSize:
@@ -49,27 +66,66 @@ class AppolonianTest(PCBFeature):
 
         # Just fill the trace everywhere
         # MRG TODO: possibly skip mask.
-        for side, layerName in itertools.product(["Top", "Bottom"], ["Layer", "Mask"]):
+        for side, layerName in itertools.product(["Top", "Bottom"], ["Layer"]):
             self.setLayerArtist(side, layerName, self.fillCircle)
 
+        self.setLayerArtist("Top", "Overlay", self.drawNullCircle)
+        self.setLayerArtist("Bottom", "Overlay", self.drawNullCircle)
+        self.setLayerArtist("Top", "Mask", self.drawNullCircle)
+
+        self.setLayerArtist("Bottom", "Mask", self.fillCircle)
         self.setLayerArtist("Drill", "Drill", self.drawDrills)
         self.setLayerArtist("Mech", "Mech", self.drawCutouts)
 
+    # def computeAttachSegs(self, segCount=7):
+    #     phis = np.linspace(0, 2 * np.pi, segCount * 2 + 1)[:-1]
+
+    def drawNullCircle(self, gerberWriter):
+        gerberWriter.defineAperature(1, True)
+        for r, x, y in self.cutouts:
+            hintedCircle(gerberWriter, x, y, r / 10)
+
     def fillCircle(self, gerberWriter):
-        gerberWriter.circle(self.maxRX, self.maxRY, self.maxR)
+        x, y, r = self.maxRX, self.maxRY, self.maxR * 1.05
+        hintedCircle(gerberWriter, x, y, r)
+        gerberWriter.filledCircle(x, y, r)
+
+        # gerberWriter.circle(self.maxRX, self.maxRY, self.maxR * 1.05)
 
     def drawDrills(self, drillWriter):
         for r, x, y in self.drills:
             drillWriter.addHole(x, y, r * 2)
 
     def drawCutouts(self, gerberWriter):
-        gerberWriter.circle(self.maxRX, self.maxRY, self.maxR)
+        hintedCircle(gerberWriter, self.maxRX, self.maxRY, self.maxR * 1.05)
 
         for r, x, y in self.cutouts:
-            gerberWriter.circle(x, y, r)
+            hintedCircle(gerberWriter, x, y, r * 0.95)
+            #gerberWriter.circle(x, y, r * 0.95)
+
+        #    self.labelCutOut(gerberWriter, x, y)
+
+    def labelCutOut(self, gerberWriter, xCenter, yCenter):
+        gerberWriter.defineAperature(0.01, True)
+        fontRadius = 1
+        centOffs = 1.25
+
+        cCenterX = xCenter - centOffs
+        cCenterY = yCenter
+
+        oCenterX = xCenter + centOffs
+        oCenterY = yCenter
+
+        cSX, cSY = cisDegree(30, fontRadius)
+        cEX, cEY = cisDegree(330, fontRadius)
+
+        gerberWriter.moveTo(cCenterX + cSX, cSY)
+        gerberWriter.arcLineTo(cCenterX + cEX, cEY, cCenterX, cCenterY, "CCW")
+
+        gerberWriter.circle(oCenterX, oCenterY, fontRadius)
 
 if __name__ == "__main__":
-    app = AppolonianTest(1)
+    app = AppolonianTest(2)
 
     pcb = PCBDrawer("appotest")
     pcb.addFeature(app)
