@@ -5,40 +5,8 @@ import numpy as np
 from pylab import axis, close, figure, plot, show
 
 
-def dumbTest(chars):
-    for c in chars:
-        face = Face('/usr/share/cups/fonts/FreeMono.ttf')
-        face.set_char_size(48 * 64)
-        face.load_char(c)
-        print(c, face.glyph.outline.contours)
-
-
-def breakPackedSplineIntoBezier(segmentData):
-    returnSegments = []
-    for i in range(len(segmentData)):
-        a, c, e = segmentData[i:i + 3]
-        b = ((a[0] + c[0]) / 2.0, (a[1] + c[1]) / 2.0)
-        d = ((c[0] + e[0]) / 2.0, (c[1] + e[1]) / 2.0)
-        # First segment
-        if i == 0:
-            returnSegments.append((a, c, d))
-            continue
-        # Last Segment
-        if i == len(segmentData) - 3:
-            returnSegments.append((b, c, e))
-            break
-        # All the middle segments
-        returnSegments.append((b, c, d))
-    return returnSegments
-
-
-def unpackCharacter(char, fontPath="/usr/share/cups/fonts/FreeMono.ttf"):
-    typeFace = Face(fontPath)
-    typeFace.set_char_size(48 * 64)
-    typeFace.load_char(char)
-    slot = typeFace.glyph
-
-    outline = slot.outline
+def unpackCharacter(glyph):
+    outline = glyph.outline
     points = np.array(outline.points, dtype=[('x', float), ('y', float)])
     x, y = points['x'], points['y']
 
@@ -87,6 +55,25 @@ def findClosestPair(ptList1, ptList2):
     return i1, i2
 
 
+def breakPackedSplineIntoBezier(segmentData):
+    returnSegments = []
+    for i in range(len(segmentData)):
+        a, c, e = segmentData[i:i + 3]
+        b = ((a[0] + c[0]) / 2.0, (a[1] + c[1]) / 2.0)
+        d = ((c[0] + e[0]) / 2.0, (c[1] + e[1]) / 2.0)
+        # First segment
+        if i == 0:
+            returnSegments.append((a, c, d))
+            continue
+        # Last Segment
+        if i == len(segmentData) - 3:
+            returnSegments.append((b, c, e))
+            break
+        # All the middle segments
+        returnSegments.append((b, c, d))
+    return returnSegments
+
+
 def computeQuadBezier(pt1, pt2, pt3, nPoints=10):
     t = np.linspace(0, 1, nPoints)
     xs = ((1 - t) ** 2 * pt1[0]) + (2 * (1 - t) * t * pt2[0]) + (t ** 2 * pt3[0])
@@ -100,7 +87,6 @@ def plotQuadBezier(pt1, pt2, pt3, nPoints=10):
 
 
 def plotLoopSets(loopSets):
-    figure()
     for loop in loopSets:
         for seg in loop:
             if len(seg) == 2:
@@ -109,11 +95,37 @@ def plotLoopSets(loopSets):
                 A, B, C = seg
                 plot([A[0], B[0], C[0]], [A[1], B[1], C[1]], 'r:', linewidth=2)
                 plotQuadBezier(*tuple(seg))
+
+
+def shiftLoopSet(loopSets, xS, yS):
+    newLoopSet = []
+    for loop in loopSets:
+        newLoop = []
+        for seg in loop:
+            newSeg = [(x + xS, y + yS) for x, y in seg]
+            newLoop.append(newSeg)
+        newLoopSet.append(newLoop)
+    return newLoopSet
+
+
+def plotTextString(stringToPlot):
+    fontPath = "/usr/share/cups/fonts/FreeMono.ttf"
+    typeFace = Face(fontPath)
+    typeFace.set_char_size(48 * 64)
+
+    figure()
+    startX, startY = 0, 0
+    for char in stringToPlot:
+        typeFace.load_char(char)
+        loopz = unpackCharacter(typeFace.glyph)
+        loopz = shiftLoopSet(loopz, startX, startY)
+        startX += typeFace.glyph.advance.x
+        startY += typeFace.glyph.advance.y
+        plotLoopSets(loopz)
     axis("equal")
+    show()
+    close()
+
 
 if __name__ == "__main__":
-    for char in "abcdefghijklmnopqrstuvwxyz:;'\"":
-        loopz = unpackCharacter(char)
-        plotLoopSets(loopz)
-        show()
-        close()
+    plotTextString("The quick brown fox jumped over the lazy dogs.")
