@@ -113,11 +113,6 @@ class TraceSegment(PCBFeature):
         gerberWriter.lineTo(self.transform(self.ePt))
 
 
-class AppolonianTest(PCBFeature):
-    def __init__(self, scalar):
-        self.rs, self.xs, self.ys = np.loadtxt("gasket.csv", skiprows=1, delimit=",")
-
-
 class TestFeature(PCBFeature):
     def __init__(self):
         PCBFeature.__init__(self)
