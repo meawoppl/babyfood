@@ -29,7 +29,7 @@ def formatFloat(fl, fmt=(4, 4)):
     intPos, decPos = string.split(".")
 
     if len(intPos) > fmt[0]:
-        warn("Warning! position %f is getting truncated (msb)!")
+        warn("WARNING: position %f is getting truncated (msb)!")
         intPos = intPos[0:3]
 
     return intPos + decPos
@@ -181,12 +181,12 @@ class GerberWriter:
         endX = float(self.uc(endX))
         endY = float(self.uc(endY))
         cX = float(self.uc(cX))
-        cY = float(self.uc(cX))
+        cY = float(self.uc(cY))
 
         rEst1 = np.sqrt((self.currentX - cX) ** 2 + (self.currentY - cY) ** 2)
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
         if np.abs(rEst1 - rEst2) > 0.001:
-            warn("Large deviation in computed radius in arc-move!")
+            warn("WARNING: Large deviation in computed radius in arc-move!")
 
         dCode = "D%02i" % dCode
 
@@ -238,7 +238,7 @@ class GerberWriter:
         # If the start and end points are not equal, close the loop
         if not pointsClose((xs[0], ys[0]), (xs[-1], ys[-1])):
             self._linearMove(xs[0], ys[0], 1)
-
+            warn("WARNING: Call to polygon is getting automatically closed!")
         # Finish the contour
         self.f.write("G37*\n")
 
