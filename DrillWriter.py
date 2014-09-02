@@ -6,7 +6,6 @@ class DrillWriter:
         else:
             self.f = open(pathOrFlo, "w")
 
-        print("DW Init", pathOrFlo)
         self.holes = {}
         self.formatSetup = False
 
