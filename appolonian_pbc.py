@@ -5,12 +5,14 @@ import itertools
 
 
 def hintedCircle(gw, cX, cY, r):
-    gw.defineAperature(0.1, True)
+    gw.defineCircularAperature(0.1, True)
     gw.circle(cX, cY, r)
+    gw.writeComment("Begin Circle Hints.  Can be safely ignored")
     for theta in np.linspace(0, 2 * np.pi, 50)[:-1]:
         xP = cX + np.cos(theta) * r
         yP = cY + np.sin(theta) * r
         gw.flashAt(xP, yP)
+    gw.writeComment("End Circle Hints.")
 
 
 def cisDegree(angleInDeg, r=1):
@@ -81,7 +83,7 @@ class AppolonianTest(PCBFeature):
     #     phis = np.linspace(0, 2 * np.pi, segCount * 2 + 1)[:-1]
 
     def drawNullCircle(self, gerberWriter):
-        gerberWriter.defineAperature(1, True)
+        gerberWriter.defineCircularAperature(1, True)
         for r, x, y in self.cutouts:
             hintedCircle(gerberWriter, x, y, r / 10)
 
@@ -106,7 +108,7 @@ class AppolonianTest(PCBFeature):
         #    self.labelCutOut(gerberWriter, x, y)
 
     def labelCutOut(self, gerberWriter, xCenter, yCenter):
-        gerberWriter.defineAperature(0.01, True)
+        gerberWriter.defineCircularAperature(0.01, True)
         fontRadius = 1
         centOffs = 1.25
 
