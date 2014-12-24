@@ -1,6 +1,15 @@
+from PCBUnits import mm, inch
+
 
 class DrillWriter:
     def __init__(self, pathOrFlo):
+        """
+        Takes in a file-like object, or path name and initializes
+        a "DrillWriter" instance for writing .xln drill files.  
+        The file is opened initially, but only written when the 
+        finalize() call is made.  This allows holes of the same
+        diameter to be coalesced into a single tool description.
+        """
         if hasattr(pathOrFlo, "write"):
             self.f = pathOrFlo
         else:
@@ -8,40 +17,48 @@ class DrillWriter:
 
         self.holes = {}
         self.formatSetup = False
-
-    def setFormat(self, fmt=(3, 3), units="METRIC"):
-        assert units in ["INCH", "METRIC"]
-        self.fmt = fmt
-        self.units = units
-        self.formatSetup = True
+        self.finalized = False
 
     def _forceSetup(self):
         if not self.formatSetup:
             self.setFormat()
 
+    def setFormat(self, fmt=(3, 3), units="METRIC"):
+        assert units in ["INCH", "METRIC"]
+        assert not finalized, "Already finalized"
+        self.fmt = fmt
+        self.units = units
+        self.formatSetup = True
+
     def addHole(self, xLoc, yLoc, diameter):
+        """
+        Add a hole at the specified x,y location with the designated diameter.
+        """
+        assert not finalized, "Already finalized"
         self._forceSetup()
         self.holes[diameter] = self.holes.get(diameter, []) + [(xLoc, yLoc)]
 
     def addHoles(self, xs, ys, ds):
+        """
+        Add holes based on three (x,y,d) interators.
+        """
+        assert not finalized, "Already finalized"
         for x, y, d in zip(xs, ys, ds):
             self.addHole(x, y, d)
 
-    def writeHeader(self):
+    def _writeHeader(self):
         self._forceSetup()
         self.f.write("M48\n")
         self.f.write(";FILE_FORMAT=%i:%i\n" % self.fmt)
         self.f.write(self.units + "\n")
         self.f.write(";TYPE=PLATED\n")
-        self.writeTools()
-        self.f.write("%\n")
 
     def _getUniqueHoleSizes(self):
         uniqueHoleSizes = list(self.holes.keys())
         uniqueHoleSizes.sort()
         return uniqueHoleSizes
 
-    def writeTools(self):
+    def _writeTools(self):
         uniqueHoleSizes = self._getUniqueHoleSizes()
 
         # MRG Hack: gerbv want to see at least 1 tool even if unused
@@ -52,6 +69,7 @@ class DrillWriter:
             tCode = "T%i" % (n + 1)
             holeSizeStr = self._fmtFloat(holeSize)
             self.f.write(tCode + "F00S00C" + holeSizeStr + "\n")
+        self.f.write("%\n")
 
     def _fmtFloat(self, fl, decimal=True):
         b, a = self.fmt
@@ -62,7 +80,7 @@ class DrillWriter:
             result = result.replace(".", "")
         return result
 
-    def writeHoles(self):
+    def _writeHoles(self):
         uniqueHoleSizes = self._getUniqueHoleSizes()
 
         for n, holeSize in enumerate(uniqueHoleSizes):
@@ -74,13 +92,13 @@ class DrillWriter:
                 self.f.write(xStr + yStr + "\n")
 
     def finalize(self):
-        self.writeHeader()
-        self.writeHoles()
+        """
+        Write the header, tools, holes, and finish the file.  
+        """
+        assert not finalized, "Already finalized"
+        self._writeHeader()
+        self._writeTools()
+        self._writeHoles()
         self.f.write("M30\n")
         self.f.close()
-
-
-if __name__ == "__main__":
-    dw = DrillWriter("dwTest.drl")
-    dw.addHole(1, 1, 0.1)
-    dw.finalize()
+        self.finalized = True
