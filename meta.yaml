@@ -1,0 +1,34 @@
+package:
+  name: babyfood
+  version: "0.0.1"
+
+source:
+  path: .
+
+build:
+  # The build number should be incremented for new builds of the same version
+  number: 1       # (defaults to 0)
+  string: "testing"
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - pycairo
+
+test:
+  files:
+    - test-data.txt
+  requires:
+    - nose
+  imports:
+    - babyfood
+
+about:
+  home: https://github.com/meawoppl/babyfood
+  license: BSD
+  summary: tool to make PCBs
