@@ -1,3 +1,5 @@
+import sys
+
 def test():
     return True
 
