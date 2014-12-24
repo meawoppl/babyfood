@@ -32,3 +32,6 @@ install:
 
 script:
     - cd ~ ; python -m babyfood.testing -v -b
+
+notifications:
+  email: false
