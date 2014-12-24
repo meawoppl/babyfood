@@ -116,9 +116,8 @@ class GerberWriter:
         return aprCode
 
     def _defineAperature(self, aprString, setAsCurrent):
-        self._forceHeader()
-        self._forcePolarity()
-
+        self._preGraphicsCheck()
+        
         if aprString not in self.aprDict:
             newAprCode = "D%i" % (10 + len(self.aprDict))
             self.f.write("%AD" + newAprCode + aprString + "*%\n")
@@ -177,12 +176,14 @@ class GerberWriter:
 
     def _arcMove(self, endX, endY, cX, cY, direction, dCode=1):
         self._preGraphicsCheck()
-        # Make estiamates of the radius, and sanity check the coords
+
+        # Unit flatten to the file unit types
         endX = float(self.uc(endX))
         endY = float(self.uc(endY))
         cX = float(self.uc(cX))
         cY = float(self.uc(cY))
 
+        # Make estiamates of the radius, and sanity check the coords
         rEst1 = np.sqrt((self.currentX - cX) ** 2 + (self.currentY - cY) ** 2)
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
         if np.abs(rEst1 - rEst2) > 0.001:
@@ -226,7 +227,6 @@ class GerberWriter:
 
     def simplePolygon(self, xs, ys):
         # Start "polygon mode"
-        # MRG Note: I believe this ignores aperatures
         self.f.write("G36*\n")
         for n, (xC, yC) in enumerate(zip(xs, ys)):
             if n == 0:

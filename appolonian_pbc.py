@@ -4,8 +4,12 @@ from PCBBase import PCBFeature, PCBDrawer
 import itertools
 
 
+# This is a hack-around to support OSH park, 
+# which determines board bounds by looking at the
+# raw coordinate data, and will get confused by a fully
+# circular board
 def hintedCircle(gw, cX, cY, r):
-    gw.defineCircularAperature(0.1, True)
+    gw.defineCircularAperature(0.0, True)
     gw.circle(cX, cY, r)
     gw.writeComment("Begin Circle Hints.  Can be safely ignored")
     for theta in np.linspace(0, 2 * np.pi, 50)[:-1]:
@@ -22,10 +26,10 @@ def cisDegree(angleInDeg, r=1):
 
 
 class AppolonianTest(PCBFeature):
-    def __init__(self, scalar):
+    def __init__(self, scalar, csvFilename="gasket.csv"):
         PCBFeature.__init__(self)
 
-        self.rs, self.xs, self.ys = np.loadtxt("gasket.csv", skiprows=1, delimiter=",").T / scalar
+        self.rs, self.xs, self.ys = np.loadtxt(csvFilename, skiprows=1, delimiter=",").T / scalar
 
         # Radaii can be negative (which does make sense really!)
         self.rs = np.abs(self.rs)
@@ -73,7 +77,7 @@ class AppolonianTest(PCBFeature):
 
         self.setLayerArtist("Top", "Overlay", self.drawNullCircle)
         self.setLayerArtist("Bottom", "Overlay", self.drawNullCircle)
-        self.setLayerArtist("Top", "Mask", self.drawNullCircle)
+        self.setLayerArtist("Top", "Mask", self.fillCircle)
 
         self.setLayerArtist("Bottom", "Mask", self.fillCircle)
         self.setLayerArtist("Drill", "Drill", self.drawDrills)
@@ -127,7 +131,7 @@ class AppolonianTest(PCBFeature):
         gerberWriter.circle(oCenterX, oCenterY, fontRadius)
 
 if __name__ == "__main__":
-    app = AppolonianTest(2)
+    app = AppolonianTest(2, "earHoops.csv")
 
     pcb = PCBDrawer("appotest")
     pcb.addFeature(app)

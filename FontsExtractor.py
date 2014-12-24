@@ -1,14 +1,12 @@
 from freetype import Face
 
-import itertools
 import numpy as np
 from pylab import axis, close, figure, plot, show
 
 
 def unpackCharacter(glyph):
     outline = glyph.outline
-    points = np.array(outline.points, dtype=[('x', float), ('y', float)])
-    x, y = points['x'], points['y']
+    points = np.array(outline.points, dtype=float)
 
     # Find the start and stop points for each loop in the segment list
     starts = [0] + [s + 1 for s in outline.contours[:-1]]
@@ -44,17 +42,6 @@ def unpackCharacter(glyph):
     return loopSets
 
 
-def findClosestPair(ptList1, ptList2):
-    closest = np.inf
-    for pt1, pt2 in itertools.product(ptList1, ptList2):
-        sub = pt1 - pt2
-        dist = np.linalg.norm(sub, sub)
-        if dist < closest:
-            closest = dist
-            i1, i2 = pt1, pt2
-    return i1, i2
-
-
 def breakPackedSplineIntoBezier(segmentData):
     returnSegments = []
     for i in range(len(segmentData)):
@@ -74,7 +61,7 @@ def breakPackedSplineIntoBezier(segmentData):
     return returnSegments
 
 
-def computeQuadBezier(pt1, pt2, pt3, nPoints=10):
+def computeQuadBezier(pt1, pt2, pt3, nPoints=4):
     t = np.linspace(0, 1, nPoints)
     xs = ((1 - t) ** 2 * pt1[0]) + (2 * (1 - t) * t * pt2[0]) + (t ** 2 * pt3[0])
     ys = ((1 - t) ** 2 * pt1[1]) + (2 * (1 - t) * t * pt2[1]) + (t ** 2 * pt3[1])
@@ -97,6 +84,21 @@ def plotLoopSets(loopSets):
                 plotQuadBezier(*tuple(seg))
 
 
+def loopToPolygon(loop, bezN=10):
+    pts = []
+    for segment in loop:
+        if len(segment) == 2:
+            pts.extend(segment)
+        if len(segment) == 3:
+            [pts.append(x, y) for x, y in computeQuadBezier(*tuple(segment), nPoints=bezN)]
+    assert pts[0] == pts[-1]
+    return pts
+
+
+def loopsToPolygons(loopSets):
+    return [loopToPolygon(loop) for loop in loopSets]
+
+
 def shiftLoopSet(loopSets, xS, yS):
     newLoopSet = []
     for loop in loopSets:
@@ -108,24 +110,41 @@ def shiftLoopSet(loopSets, xS, yS):
     return newLoopSet
 
 
-def plotTextString(stringToPlot):
-    fontPath = "/usr/share/cups/fonts/FreeMono.ttf"
+def plotTextString(stringToPlot, kerning=False, startXY=(0,0)):
+    fontPath = "/home/meawoppl/Dropbox/repos/babyfood/cmr10.pfb"
     typeFace = Face(fontPath)
+    typeFace.attach_file("/home/meawoppl/Dropbox/repos/babyfood/cmr10.pfm")
     typeFace.set_char_size(48 * 64)
 
     figure()
-    startX, startY = 0, 0
-    for char in stringToPlot:
+    startX, startY = startXY
+    for n, char in enumerate(stringToPlot):
         typeFace.load_char(char)
         loopz = unpackCharacter(typeFace.glyph)
         loopz = shiftLoopSet(loopz, startX, startY)
         startX += typeFace.glyph.advance.x
         startY += typeFace.glyph.advance.y
+        if kerning and (n != 0):
+            kv = typeFace.get_kerning(char, stringToPlot[n-1])
+            print(char, stringToPlot[n-1])
+            print(kv.x, kv.y)
+            print(dir(kv))
+            startX += kv.x
+
         plotLoopSets(loopz)
     axis("equal")
     show()
     close()
 
 
+class TextFeature(SingleLayerFeature):
+    def __init__(self, layerName, text):
+        SingleLayerFeature.__init__(self, layerName)
+        self.text = text
+    def artist(self, gerberWriter):
+        
+        gerberWriter
+
+
 if __name__ == "__main__":
-    plotTextString("The quick brown fox jumped over the lazy dogs.")
+    plotTextString("The quick brown fox jumped over the lazy dogs.", kerning = True)

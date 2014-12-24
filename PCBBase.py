@@ -1,6 +1,7 @@
 import itertools, os
 import numpy as np
 
+from PCBUnits import mil, mm
 from GerberWriter import GerberWriter
 from DrillWriter import DrillWriter
 
@@ -53,6 +54,24 @@ class PCBFeature(TransformableFeature):
             return {"Top": "Bottom", "Bottom": "Top"}[torb]
         else:
             return torb
+
+class SingleLayerFeature(PCBFeature):
+    def __init__(self, layerTuple):
+        PCBFeature.__init__(self)
+        side, name = layerTuple
+        self.setLayerArtist(side, name, self.artist)
+    def artist(self, gerberWriter):
+        '''Overwrite with call to add feature'''
+        pass
+
+
+class SquareSMDPad(PCBFeature):
+    def __init__(self, height, width, maskPadding=mil(4)):
+        PCBFeature.__init__(self)
+
+        self.h = height
+        self.w = width
+        self.p = maskPadding
 
 
 class RectBoardOutline(PCBFeature):
