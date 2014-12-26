@@ -1,6 +1,6 @@
 package:
   name: babyfood
-  version: {{ environ.get('GIT_DESCRIBE_TAG', "0.0.0" }}
+  version: {{ environ.get('GIT_DESCRIBE_TAG', "0.0.0") }}
 
 source:
   path: .
@@ -18,15 +18,16 @@ requirements:
 
   run:
     - python
-    - pycairo
+#    - units
+#    - pycairo
 
 test:
-  files:
-    - test-data.txt
   requires:
     - nose
   imports:
     - babyfood
+  commands:
+    - python -m babyfood.testing 
 
 about:
   home: https://github.com/meawoppl/babyfood
