@@ -10,6 +10,9 @@ branches:
     - master
 
 before_install:
+  # Install gerbv for validation of files
+  - sudo apt-get update
+  - sudo apt-get install -y gerbv
   # Install Miniconda
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.6.0-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.6.0-Linux-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
