@@ -18,12 +18,11 @@ requirements:
 
   run:
     - python
-#    - units
-#    - pycairo
 
 test:
   requires:
-    - nose
+    - scipy
+    - pillow 
   imports:
     - babyfood
   commands:
