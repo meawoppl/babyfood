@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 
-from PCBUnits import mm, inch
+from babyfood.PCBUnits import mm, inch
 
 
 def pointsClose(pt1, pt2, eps=1e-8):
@@ -150,6 +150,7 @@ class GerberWriter:
 
     def finalize(self):
         self.f.write("M02*\n")
+        self.f.flush()
         self.f.close()
 
     def _linearMove(self, endX, endY, dCode):
