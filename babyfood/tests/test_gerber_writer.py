@@ -28,7 +28,10 @@ class GerberWriterTestCase(unittest.TestCase):
 		output = subprocess.check_output(_gerbvTestCall).decode("UTF-8")
 		versionString = output.split()[2]
 		versionTuple = tuple([int(vn) for vn in versionString.split(".")])
-		self.assertTrue(versionTuple > (2, 5, 0))
+		newEnough = versionTuple > (2, 5, 0)
+		if not newEnough:
+			print("Gerbv version:" + versionTuple)
+		self.assertTrue(newEnough)
 	
 	def _check_gerber_file(self, filepath):
 		# Stupid check #1
