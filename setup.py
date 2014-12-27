@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+from distutils.core import setup
 
 setup(name='babyfood',
       version='0.0.0',
@@ -8,5 +8,8 @@ setup(name='babyfood',
       author='Matthew Goodman',
       author_email='meawoppl@gmail.com',
       url='https://www.github.com/babyfood',
-      packages=find_packages(),
+      packages=["babyfood",
+                "babyfood.features",
+                "babyfood.tests",
+                "babyfood.io"],
       )

@@ -1,9 +1,10 @@
-import unittest, sys
+import os, unittest, sys
+
+import babyfood.tests
+
 
 def test():
-    loader = unittest.TestLoader()
-    suite = loader.discover("babyfood.tests")
-    return unittest.main().runTests(suite=suite)
+    return unittest.main(babyfood.tests)
 
 if __name__ == "__main__":
     sys.exit(0 if test() else 1)

@@ -43,7 +43,7 @@ class HomogenousTransform:
         return HomogenousTransform(m)
 
     @staticmethod
-    def scale(sx, sy):
+    def scaling(sx, sy):
         m = np.matrix([[sx, 0, 0],
                        [0, sy, 0],
                        [0,  0, 1]])
