@@ -19,30 +19,37 @@ class DrillWriter:
         self.formatSetup = False
         self.finalized = False
 
+    def _fCheck(self):
+        assert not finalized, "Already finalized"
+
     def _forceSetup(self):
         if not self.formatSetup:
             self.setFormat()
 
     def setFormat(self, fmt=(3, 3), units="METRIC"):
         assert units in ["INCH", "METRIC"]
-        assert not finalized, "Already finalized"
+        self._fCheck()
+
         self.fmt = fmt
         self.units = units
+        self.uc = {"INCH": inch, "METRIC": mm}[units]
+
         self.formatSetup = True
 
     def addHole(self, xLoc, yLoc, diameter):
         """
         Add a hole at the specified x,y location with the designated diameter.
         """
-        assert not finalized, "Already finalized"
+        self._fCheck()
         self._forceSetup()
-        self.holes[diameter] = self.holes.get(diameter, []) + [(xLoc, yLoc)]
+        diameter = self.uc(diameter)
+        self.holes[diameter] = self.holes.get(diameter, []) + [(self.uc(xLoc), self.uc(yLoc))]
 
     def addHoles(self, xs, ys, ds):
         """
         Add holes based on three (x,y,d) interators.
         """
-        assert not finalized, "Already finalized"
+        self._fCheck()
         for x, y, d in zip(xs, ys, ds):
             self.addHole(x, y, d)
 
@@ -95,7 +102,7 @@ class DrillWriter:
         """
         Write the header, tools, holes, and finish the file.  
         """
-        assert not finalized, "Already finalized"
+        self._fCheck()
         self._writeHeader()
         self._writeTools()
         self._writeHoles()

@@ -76,7 +76,6 @@ class GerberWriter:
 
         # Unit converdsion function
         self.uc = {"MM": mm, "IN": inch}[units]
-
         self.units = units
         self.formatSet = True
 
@@ -239,7 +238,13 @@ class GerberWriter:
         self.moveTo(cx - cr, cy)
         self.arcLineTo(cx - cr, cy, cx, cy, "CW")
 
-    def simplePolygon(self, xs, ys):
+    def polygon(self, xs, ys):
+        """
+        This subroutine writes a polygon to the gerbv file.
+        Note that this polygon can be fairly complex, including
+        null-contours and nested shapes.  Refer to the gerber
+        spec to see what sorts of things are allowed in here.  
+        """
         # Start "polygon mode"
         self.f.write("G36*\n")
         for n, (xC, yC) in enumerate(zip(xs, ys)):
