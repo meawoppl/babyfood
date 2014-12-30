@@ -1,6 +1,7 @@
 import os, random, subprocess, tempfile, unittest
 
-from scipy import misc
+from PIL import Image
+import numpy as np
 
 from babyfood.io.GerberWriter import GerberWriter
 
@@ -8,29 +9,40 @@ from babyfood.io.GerberWriter import GerberWriter
 _gerbvTestCall = ("gerbv", "-V")
 
 # Call with 100dpi, and no border
-_gerbvCalibratedCall = ("gerbv", "-D 512x512", "-B 0")
+_gerbvCalibratedCall = ("gerbv", "--dpi=100", "--border=0")
+
+
+def patched_imread(imgPath):
+	with open(imgPath, "rb") as img_file:
+		with Image.open(img_file) as img:
+			return np.array(img)
 
 # MRG NB: fast, but not secure, hacky, bad. XXX
 def _quickTempFilePath(suffix):
 	characters = ("abcdefghijklmnopqrstuvwxyz" +
 		          "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                  "0123456789_")
+                  "0123456789")
 	name = "".join([random.choice(characters) for c in range(10)]) + suffix
 	path = os.path.join(tempfile.gettempdir(), name)
 	return path
 
 class GerberWriterTestCase(unittest.TestCase):
 	def test_gerbv_exists(self):
-		result = subprocess.check_call(_gerbvTestCall)
+		result = subprocess.check_call(_gerbvTestCall, stdout=subprocess.DEVNULL)
 		self.assertEqual(result, 0)
 
 	def test_gerbv_version(self):
+		# Make a call to get the version.
 		output = subprocess.check_output(_gerbvTestCall).decode("UTF-8")
-		versionString = output.split()[2]
+
+		# Parse it into a version tuple.
+		versionString = output.split()[2]  
 		versionTuple = tuple([int(vn) for vn in versionString.split(".")])
+
+		# Modern mint/ubunutu can d/l 2.6, but travis seems to only be up to 2.5
 		newEnough = versionTuple > (2, 4, 0)
 		if not newEnough:
-			print("Gerbv version:" + versionTuple)
+			print("Gerbv Version:" + versionTuple)
 		self.assertTrue(newEnough)
 	
 	def _check_gerber_file(self, filepath):
@@ -39,24 +51,60 @@ class GerberWriterTestCase(unittest.TestCase):
 
 		# Next, make sure it get through gerbv export
 		pngPath = _quickTempFilePath(".png")
-		gvCall = _gerbvCalibratedCall + ("-x", "png", "-o", pngPath)
-		callSuccess = subprocess.check_call(gvCall) == 0
-		self.assertTrue(callSuccess)
+		txtTrace = _quickTempFilePath(".txt")
+		gvCall = _gerbvCalibratedCall + ("-x", "png", "-o", pngPath, filepath)
+
+		with open(txtTrace, "w") as output:
+			callSuccess = subprocess.check_call(gvCall, stdout=output) == 0
+
+		# Make sure the call succeeded, and the png was generated.
+		if not callSuccess:
+			print("Gerbv retruned non-zero exit code.  Gerbv Trace follows")
+			raise RuntimeError(open(txtTrace).read())
 
 		self.assertTrue(os.path.exists(pngPath))
 
-		# Nice.  gerbv made it through.  next check the output file is a valid png
-		pngData = misc.imread(pngPath, flatten=True)
+		# gerbv made it through.  next check the output file is a valid png
+		pngData = patched_imread(pngPath)
 		return pngData
 
-	def test_gw_line(self):
+	def test_gw_flash(self):
 		gerbFilePath = _quickTempFilePath(".gbr")
 		gw = GerberWriter(gerbFilePath)
+		gw.defineCircularAperature(0.1, True)
+		for c in [-5, 0, 5]:
+			gw.flashAt(c, c)
+			gw.finalize()
 
-		gw.defineCircularAperature(0.25, True)
-		gw.moveTo(1, 1)
-		gw.lineTo(-1, -1)
+		d = _check_gerber_file(gerbFilePath)
+
+	def test_gw_line(self):
+		# Generate a temp gerber file
+		gerbFilePath = _quickTempFilePath(".gbr")
+		gw = GerberWriter(gerbFilePath)
+		gw.defineCircularAperature(0.001, True)
+		# Draw a square.
+		gw.moveTo( 10,  10)
+		gw.lineTo(-10,  10)
+		gw.lineTo(-10, -10)
+		gw.lineTo( 10, -10)
+		gw.lineTo( 10,  10)
 		gw.finalize()
 
 		d = self._check_gerber_file(gerbFilePath)
-		print(d)
+
+	def test_gw_polygon(self):
+		gerbFilePath = _quickTempFilePath(".gbr")
+		gw = GerberWriter(gerbFilePath)
+		gw.defineCircularAperature(0.001, True)
+
+		# Make an oval
+		ts = np.linspace(0, 2 * np.pi, 10)
+		xs = np.cos(ts)
+		ys = np.sin(ts) * 1.5
+
+		gw.polygon(xs, ys)
+		gw.finalize()
+
+		d = self._check_gerber_file(gerbFilePath)
+
