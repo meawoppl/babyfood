@@ -10,7 +10,7 @@ def pointsClose(pt1, pt2, eps=1e-8):
     x1, y1 = pt1
     x2, y2 = pt2
 
-    dist = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return dist < eps
 
 
@@ -42,10 +42,10 @@ def fmtCoord(xLoc, yLoc, xFmt=(4, 4), yFmt=(4, 4), xLab="X", yLab="Y"):
 class GerberWriter:
     """
     Class for the output of gerber vector graphics files.
-    This can be used to create layers of a PCB or similar 
+    This can be used to create layers of a PCB or similar
     project.  It takes in a filepath, or file-like object.
     It takes care of several tediuous error-prone steps namely:
-      1. All supported gerber graphics primitives. 
+      1. All supported gerber graphics primitives.
       2. Aperature generation and unification
       3. Layer, ploarity, and units tracking
       4. Formatting + precision/underflow concerns.
@@ -65,6 +65,9 @@ class GerberWriter:
 
         self.currentX = 0
         self.currentY = 0
+
+        self.polygonMode = type("PolygonMode", (), {"__enter__": self._startPolygonMode,
+                                                    "__exit__": self._stopPolygonMode})
 
     def setCoordFmt(self, xFmt=(4, 4), yFmt=(4, 4), units="MM"):
         assert units in ["MM", "IN"], "Units much be IN or MM"
@@ -127,12 +130,12 @@ class GerberWriter:
 
     def _defineAperature(self, aprString, setAsCurrent):
         self._preGraphicsCheck()
-        
+
         if aprString not in self.aprDict:
             newAprCode = "D%i" % (10 + len(self.aprDict))
             self.f.write("%AD" + newAprCode + aprString + "*%\n")
-            self.aprDict[aprString] = newAprCode 
-        
+            self.aprDict[aprString] = newAprCode
+
         if len(self.aprDict) > 999:
             warn("WARNING! Aperature counts above 999 not supported by all machines.")
 
@@ -243,29 +246,31 @@ class GerberWriter:
         This subroutine writes a polygon to the gerbv file.
         Note that this polygon can be fairly complex, including
         null-contours and nested shapes.  Refer to the gerber
-        spec to see what sorts of things are allowed in here.  
+        spec to see what sorts of things are allowed in here.
         """
-        # Start "polygon mode"
-        self.f.write("G36*\n")
-        for n, (xC, yC) in enumerate(zip(xs, ys)):
-            if n == 0:
-                # Move to the start point
-                self._linearMove(xC, yC, 2)
-            else:
-                # Trace the next segment
-                self._linearMove(xC, yC, 1)
-        # If the start and end points are not equal, close the loop
-        if not pointsClose((xs[0], ys[0]), (xs[-1], ys[-1])):
-            self._linearMove(xs[0], ys[0], 1)
-            warn("WARNING: Call to polygon is getting automatically closed!")
-        # Finish the contour
-        self.f.write("G37*\n")
+        with self.polygonMode():
+            for n, (xC, yC) in enumerate(zip(xs, ys)):
+                if n == 0:
+                    # Move to the start point
+                    self._linearMove(xC, yC, 2)
+                else:
+                    # Trace the next segment
+                    self._linearMove(xC, yC, 1)
+            # If the start and end points are not equal, close the loop
+            if not pointsClose((xs[0], ys[0]), (xs[-1], ys[-1])):
+                self._linearMove(xs[0], ys[0], 1)
+                warn("WARNING: Call to polygon is getting automatically closed!")
 
     def filledCircle(self, x, y, r):
+        with self.polygonMode():
+            self.circle(x, y, r)
+
+    def _startPolygonMode(self):
         self.f.write("G36*\n")
-        self.circle(x, y, r)
-        # Finish the contour
+
+    def _stopPolygonMode(self):
         self.f.write("G37*\n")
+
 
 if __name__ == "__main__":
     # Quick test of building functionality
