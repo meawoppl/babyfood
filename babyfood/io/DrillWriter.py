@@ -1,4 +1,4 @@
-from PCBUnits import mm, inch
+from babyfood.PCBUnits import mm, inch
 
 
 class DrillWriter:
@@ -20,7 +20,7 @@ class DrillWriter:
         self.finalized = False
 
     def _fCheck(self):
-        assert not finalized, "Already finalized"
+        assert not self.finalized, "Already finalized"
 
     def _forceSetup(self):
         if not self.formatSetup:
