@@ -45,11 +45,11 @@ class GerberWriter:
     This can be used to create layers of a PCB or similar
     project.  It takes in a filepath, or file-like object.
     It takes care of several tediuous error-prone steps namely:
-      1. All supported gerber graphics primitives.
+      1. Most supported gerber graphics primitives. (Aperature Macros coming)
       2. Aperature generation and unification
       3. Layer, ploarity, and units tracking
       4. Formatting + precision/underflow concerns.
-      5. Some machiene/legacy specific considerations
+      5. Some machiene/legacy specific considerations of format
     """
     def __init__(self, pathOrFlo):
         if hasattr(pathOrFlo, "write"):
@@ -259,7 +259,7 @@ class GerberWriter:
             # If the start and end points are not equal, close the loop
             if not pointsClose((xs[0], ys[0]), (xs[-1], ys[-1])):
                 self._linearMove(xs[0], ys[0], 1)
-                warn("WARNING: Call to polygon is getting automatically closed!")
+                warn("WARNING: Call to polygon() is getting automatically closed!")
 
     def filledCircle(self, x, y, r):
         with self.polygonMode():
@@ -268,7 +268,8 @@ class GerberWriter:
     def _startPolygonMode(self):
         self.f.write("G36*\n")
 
-    def _stopPolygonMode(self):
+    def _stopPolygonMode(self, *args):
+        # MRG TODO: Check args . . .
         self.f.write("G37*\n")
 
 
