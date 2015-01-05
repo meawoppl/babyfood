@@ -12,6 +12,8 @@ _gerbvTestCall = ("gerbv", "-V")
 _gerbvCalibratedCall = ("gerbv", "--dpi=100", "--border=0")
 
 
+devnull = open(os.devnull, "wb")
+
 def patched_imread(imgPath):
     with open(imgPath, "rb") as img_file:
         with Image.open(img_file) as img:
@@ -30,7 +32,7 @@ def _quickTempFilePath(suffix):
 
 class GerberWriterTestCase(unittest.TestCase):
     def test_gerbv_exists(self):
-        result = subprocess.check_call(_gerbvTestCall, stdout=os.devnull)
+        result = subprocess.check_call(_gerbvTestCall, stdout=devnull)
         self.assertEqual(result, 0)
 
     def test_gerbv_version(self):
