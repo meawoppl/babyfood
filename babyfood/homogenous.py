@@ -43,25 +43,65 @@ class HomogenousTransform:
         return HomogenousTransform(m)
 
     @staticmethod
-    def scaling(sx, sy):
-        m = np.matrix([[sx, 0, 0],
-                       [0, sy, 0],
-                       [0,  0, 1]])
+    def scaling(s):
+        m = np.matrix([[s, 0, 0],
+                       [0, s, 0],
+                       [0, 0, 1]])
         return HomogenousTransform(m)
 
 
 class TransformationContext:
-    def save(self):
-        pass
-    def load(self):
-        pass
+    def __init__(self, m=None):
+        self.xformStack = [HomogenousTransform(m)]
+        self._updateXform()
 
+        tMethods = {"__init__": self._transform_init,
+                    "__enter__": self._translation_entr,
+                    "__exit__": self._popXform}
+        self.translation = type("", (), tMethods)
+
+        rMethods = {"__init__": self._transform_init,
+                    "__enter__": self._rotation_entr,
+                    "__exit__": self._popXform}
+        self.rotation = type("", (), rMethods)
+
+    def _transform_init(self, *args):
+        self._t = args
+
+    def _translation_entr(self):
+        self.addTranslation(*self._t)
+        del self._t
+    def _rotation_entr(self):
+        self.addRotation(*self._t)
+        del self._t
+
+    def _updateXform(self):
+        self._m = HomogenousTransform()
+        for xform in self.xformStack:
+            self._m = self._m * xform
+
+    def _pushXform(self, ht):
+        self.xformStack.append(ht)
+        self._updateXform()        
+
+    def _popXform(self, *args):
+        self.xformStack.pop()
+        self._updateXform()
+
+    def addTranslation(self, x, y):
+        ht = HomogenousTransform.translation(x, y)
+        self._pushXform(ht)
+
+    def addRotation(self, phi):
+        ht = HomogenousTransform.rotation(phi)
+        self._pushXform(ht)        
+
+    def project(self, xys):
+        return self._m.project(xys)
 
 if __name__ == "__main__":
-    ht = HomogenousTransform.translation(5, 5)
+    tc = TransformationContext()
 
-    ht2 = ht * ht
-    
-    xy = np.ones((2, 10))
-    r = ht2.project(xy)
-    print(r)
+    with tc.translation(2, 5):
+        pass
+    print("win")
