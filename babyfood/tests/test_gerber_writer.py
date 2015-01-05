@@ -30,7 +30,7 @@ def _quickTempFilePath(suffix):
 
 class GerberWriterTestCase(unittest.TestCase):
     def test_gerbv_exists(self):
-        result = subprocess.check_call(_gerbvTestCall, stdout=subprocess.DEVNULL)
+        result = subprocess.check_call(_gerbvTestCall, stdout=os.devnull)
         self.assertEqual(result, 0)
 
     def test_gerbv_version(self):
