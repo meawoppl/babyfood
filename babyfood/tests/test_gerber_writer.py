@@ -3,7 +3,7 @@ import os, random, subprocess, tempfile, unittest
 from PIL import Image
 import numpy as np
 
-from babyfood.io.GerberWriter import GerberWriter
+from babyfood.layers.GerberLayer import GerberLayer
 
 # Just see if gerbv is alive and kicking
 _gerbvTestCall = ("gerbv", "-V")
@@ -13,6 +13,7 @@ _gerbvCalibratedCall = ("gerbv", "--dpi=100", "--border=0")
 
 
 devnull = open(os.devnull, "wb")
+
 
 def patched_imread(imgPath):
     with open(imgPath, "rb") as img_file:
