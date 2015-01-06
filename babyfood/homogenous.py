@@ -1,4 +1,7 @@
+from warnings import warn
+
 import numpy as np
+
 
 class HomogenousTransform:
     def __init__(self, m=None):
@@ -6,12 +9,16 @@ class HomogenousTransform:
             m = np.eye(3)
         assert m.shape == (3, 3)
         self.m = np.matrix(m)
-        
         self._checkDeterminant()
 
     def _checkDeterminant(self):
         determinant = np.linalg.det(self.m)
         assert not np.allclose(determinant, 0)
+
+    def scale(self, value):
+        if self.m[0, 0] != self.m[1, 1]:
+            warn("scale called with non-uniform expansion!")
+        return value * self.m[0, 0]
 
     def project(self, xys):
         assert xys.shape[0] == 2
@@ -34,7 +41,7 @@ class HomogenousTransform:
                        [s(phi),  c(phi), 0],
                        [0,       0,      1]])
         return HomogenousTransform(m)
-        
+
     @staticmethod
     def translation(dx, dy):
         m = np.matrix([[1, 0, dx],
@@ -71,6 +78,7 @@ class TransformationContext:
     def _translation_entr(self):
         self.addTranslation(*self._t)
         del self._t
+
     def _rotation_entr(self):
         self.addRotation(*self._t)
         del self._t
@@ -82,7 +90,7 @@ class TransformationContext:
 
     def _pushXform(self, ht):
         self.xformStack.append(ht)
-        self._updateXform()        
+        self._updateXform()
 
     def _popXform(self, *args):
         self.xformStack.pop()
@@ -94,14 +102,7 @@ class TransformationContext:
 
     def addRotation(self, phi):
         ht = HomogenousTransform.rotation(phi)
-        self._pushXform(ht)        
+        self._pushXform(ht)
 
     def project(self, xys):
         return self._m.project(xys)
-
-if __name__ == "__main__":
-    tc = TransformationContext()
-
-    with tc.translation(2, 5):
-        pass
-    print("win")

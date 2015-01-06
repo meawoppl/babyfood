@@ -1,9 +1,10 @@
 from warnings import warn
-from babyfood.io.GerberWriter import GerberWriter
-
-from babyfood.homogenous import HomogenousTransform
 
 import numpy as np
+
+from babyfood.io.GerberWriter import GerberWriter
+from babyfood.homogenous import HomogenousTransform
+from babyfood.PCBUnits import mm, inch
 
 
 def pointsClose(pt1, pt2, eps=1e-8):
@@ -16,19 +17,40 @@ def pointsClose(pt1, pt2, eps=1e-8):
 
 class GerberLayer(GerberWriter):
     def __init__(self, *args, **kwargs):
+        '''
+        GerberLayer is a class for producing gerber vector graphics
+        It uses the GerberWriter base class to do the file-io and
+        sanity checks, and provides a slightly higher level interface
+        to make graphics easier.  This includes:
+          1. Transforms
+          2. Mandatory unit checks
+          3. Simplified aperature definitions
+          4. Lots of Semantic-Sugar
+        '''
         GerberWriter.__init__(self, *args, **kwargs)
         self.polygonMode = type("PolygonMode", (), {"__enter__": self._startPolygonMode,
                                                     "__exit__": self._stopPolygonMode})
 
         self._m = HomogenousTransform()
 
-    def setTransform(self, xform):
+        self._uc = {"MM": mm, "IN": inch}[self._units]
+
+    def setTransformMatrix(self, xform):
         self._m = xform
 
     def defineCircularAperature(self, diameter, setAsCurrent=True):
         aprDescriptor = "C,%0.03f" % diameter
         aprCode = self._defineAperature(aprDescriptor, setAsCurrent)
         return aprCode
+
+    def moveTo(self, newX, newY):
+        self._linearMove(newX, newY, 2)
+
+    def lineTo(self, newX, newY):
+        self._linearMove(newX, newY, 1)
+
+    def flashAt(self, newX, newY):
+        self._linearMove(newX, newY, 3)
 
     def circle(self, cx, cy, cr):
         self.moveTo(cx - cr, cy)
