@@ -10,6 +10,7 @@ setup(name='babyfood',
       url='https://www.github.com/babyfood',
       packages=["babyfood",
                 "babyfood.features",
-                "babyfood.tests",
-                "babyfood.io"],
+                "babyfood.io",
+                "babyfood.layers",
+                "babyfood.tests"]
       )
