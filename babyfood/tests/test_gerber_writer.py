@@ -81,7 +81,7 @@ class GerberWriterTestCase(unittest.TestCase):
 
     def test_gw_flash(self):
         gerbFilePath = _quickTempFilePath(".gbr")
-        gw = GerberWriter(gerbFilePath)
+        gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.1, True)
         for c in [-5, 0, 5]:
             gw.flashAt(c, c)
@@ -92,7 +92,7 @@ class GerberWriterTestCase(unittest.TestCase):
     def test_gw_line(self):
         # Generate a temp gerber file
         gerbFilePath = _quickTempFilePath(".gbr")
-        gw = GerberWriter(gerbFilePath)
+        gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.001, True)
         # Draw a square.
         gw.moveTo(10, 10)
@@ -106,7 +106,7 @@ class GerberWriterTestCase(unittest.TestCase):
 
     def test_gw_polygon(self):
         gerbFilePath = _quickTempFilePath(".gbr")
-        gw = GerberWriter(gerbFilePath)
+        gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.001, True)
 
         # Make an oval
@@ -121,7 +121,7 @@ class GerberWriterTestCase(unittest.TestCase):
 
     def test_gw_circle(self):
         gerbFilePath = _quickTempFilePath(".gbr")
-        gw = GerberWriter(gerbFilePath)
+        gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.001, True)
 
         gw.filledCircle(0, 0, 5)

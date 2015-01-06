@@ -1,7 +1,7 @@
-from warnigns import warn
+from warnings import warn
 from babyfood.io.GerberWriter import GerberWriter
 
-from babyfoor.homogenous import HomogenousTransform
+from babyfood.homogenous import HomogenousTransform
 
 import numpy as np
 

@@ -51,6 +51,7 @@ class GerberWriter:
             self._f = open(pathOrFlo, "w")
 
         self._polaritySet = False
+        self._inPolygonMode = False
 
         self._aprDict = {}
 
@@ -136,10 +137,10 @@ class GerberWriter:
         self._checkAperature()
 
         # unit sanitize
-        endX = float(self.uc(endX))
-        endY = float(self.uc(endY))
+        endX = float(self._uc(endX))
+        endY = float(self._uc(endY))
 
-        formattedCoords = fmtCoord(endX, endY, self.xFmt, self.yFmt)
+        formattedCoords = fmtCoord(endX, endY, self._xFmt, self._yFmt)
         dCodeStr = "D%02i" % dCode
         # Stroke w/ current aperature
         if dCode == 1:
@@ -168,13 +169,13 @@ class GerberWriter:
         self._checkAperature()
 
         # Unit flatten to the file unit types
-        endX = float(self.uc(endX))
-        endY = float(self.uc(endY))
-        cX = float(self.uc(cX))
-        cY = float(self.uc(cY))
+        endX = float(self._uc(endX))
+        endY = float(self._uc(endY))
+        cX = float(self._uc(cX))
+        cY = float(self._uc(cY))
 
         # Make estiamates of the radius, and sanity check the coords
-        rEst1 = np.sqrt((self.currentX - cX) ** 2 + (self.currentY - cY) ** 2)
+        rEst1 = np.sqrt((self._currentX - cX) ** 2 + (self._currentY - cY) ** 2)
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
         if np.abs(rEst1 - rEst2) > 0.001:
             warn("WARNING: Large deviation in computed radius in arc-move!")
