@@ -12,7 +12,9 @@ _gerbvTestCall = ("gerbv", "-V")
 _gerbvCalibratedCall = ("gerbv", "--dpi=100", "--border=0")
 
 
-devnull = open(os.devnull, "wb")
+def quiet_check_call(call):
+    with open(os.devnull, "wb") as devnull:
+        return subprocess.check_call(call, stdout=devnull)
 
 
 def patched_imread(imgPath):
@@ -33,7 +35,7 @@ def _quickTempFilePath(suffix):
 
 class GerberWriterTestCase(unittest.TestCase):
     def test_gerbv_exists(self):
-        result = subprocess.check_call(_gerbvTestCall, stdout=devnull)
+        result = quiet_check_call(_gerbvTestCall)
         self.assertEqual(result, 0)
 
     def test_gerbv_version(self):
@@ -82,7 +84,7 @@ class GerberWriterTestCase(unittest.TestCase):
     def test_gw_flash(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
-        gw.defineCircularAperature(0.1, True)
+        gw.defineCircularAperature(0.1)
         for c in [-5, 0, 5]:
             gw.flashAt(c, c)
         gw.finalize()
@@ -93,7 +95,7 @@ class GerberWriterTestCase(unittest.TestCase):
         # Generate a temp gerber file
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
-        gw.defineCircularAperature(0.001, True)
+        gw.defineCircularAperature(0.001)
         # Draw a square.
         gw.moveTo(10, 10)
         gw.lineTo(-10, 10)
@@ -107,7 +109,7 @@ class GerberWriterTestCase(unittest.TestCase):
     def test_gw_polygon(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
-        gw.defineCircularAperature(0.001, True)
+        gw.defineCircularAperature(0.001)
 
         # Make an oval
         ts = np.linspace(0, 2 * np.pi, 10)
@@ -122,7 +124,7 @@ class GerberWriterTestCase(unittest.TestCase):
     def test_gw_circle(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
-        gw.defineCircularAperature(0.001, True)
+        gw.defineCircularAperature(0.001)
 
         gw.filledCircle(0, 0, 5)
         gw.finalize()
