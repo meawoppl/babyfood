@@ -110,3 +110,6 @@ class TransformationContext(HomogenousTransform):
     def addRotation(self, phi):
         ht = HomogenousTransform.rotation(phi)
         self._pushXform(ht)
+
+    def getMatrix(self):
+        return self.m
