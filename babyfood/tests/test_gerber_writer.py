@@ -1,7 +1,7 @@
 import numpy as np
 
 from babyfood.layers.GerberLayer import GerberLayer
-from babyfood.testing.shared import GerbvTester, _quickTempFilePath
+from babyfood.tests.shared import GerbvTester, _quickTempFilePath
 
 
 class GerberWriterTestCase(GerbvTester):
