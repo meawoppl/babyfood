@@ -9,7 +9,7 @@ from babyfood.layers.GerberLayer import GerberLayer
 _gerbvTestCall = ("gerbv", "-V")
 
 # Call with 100dpi, and no border
-_gerbvCalibratedCall = ("gerbv", "--dpi=100", "--border=0")
+_gerbvCalibratedCall = ("gerbv", "--dpi=1024", "--border=0")
 
 
 def quiet_check_call(call):
@@ -68,6 +68,8 @@ class GerberWriterTestCase(unittest.TestCase):
         if not callSuccess:
             print("Gerbv returned non-zero exit code.  Gerbv Trace follows")
             raise RuntimeError(open(txtTrace).read())
+        else:
+            os.remove(txtTrace)
 
         self.assertTrue(os.path.exists(pngPath))
 
@@ -77,6 +79,7 @@ class GerberWriterTestCase(unittest.TestCase):
         if flatten:
             pngData = pngData.sum(axis=2) / 3
 
+        print(pngData.shape)
         self.assertTrue(pngData.shape > (1, 1))
 
         return pngData
@@ -127,6 +130,25 @@ class GerberWriterTestCase(unittest.TestCase):
         gw.defineCircularAperature(0.001)
 
         gw.filledCircle(0, 0, 5)
+        gw.finalize()
+
+        self._check_gerber_file(gerbFilePath)
+
+    def test_gl_aperatures(self):
+        gerbFilePath = _quickTempFilePath(".gbr")
+        gw = GerberLayer(gerbFilePath)
+
+        for n, hole in enumerate([(), (0.25,), (0.25, 0.25)]):
+            x = n - 1
+            gw.defineCircularAperature(0.5, hole=hole)
+            gw.flashAt(x, -1)
+
+            gw.defineRectangularAperature(0.5, 0.5, hole=hole)
+            gw.flashAt(x, 0)
+
+            gw.defineObroundAperature(0.75, 0.25, hole=hole)
+            gw.flashAt(x, 1)
+
         gw.finalize()
 
         self._check_gerber_file(gerbFilePath)
