@@ -1,8 +1,16 @@
-import units.predefined
+from pint import UnitRegistry
 
-units.predefined.define_units()
+_unitRegistry = UnitRegistry()
+_unitRegistry.define("mil = inch / 1000")
 
-inch = units.predefined.unit('inch')
-mil = units.predefined.scaled_unit("mil", "inch", 0.001)
-cm = units.predefined.unit("cm")
-mm = units.predefined.unit("mm")
+
+def _toUnit(floatOrUnited, unitName):
+    try:
+        return floatOrUnited.to(unitName)
+    except:
+        return _unitRegistry.Quantity(floatOrUnited, unitName)
+
+inch = lambda f: _toUnit(f, 'inch')
+mil = lambda f: _toUnit(f, "mil")
+cm = lambda f: _toUnit(f, "cm")
+mm = lambda f: _toUnit(f, "mm")

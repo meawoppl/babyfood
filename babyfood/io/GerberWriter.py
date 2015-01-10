@@ -57,26 +57,22 @@ class GerberWriter:
 
         self.setLayerPolarity()
 
-    def _trimFloatToPrecision(self, flt):
+    def _trimFloatToPrecision(self, flt, radix=""):
         fmtStr = "%.0" + str(self._fFmt[1]) + "f"
         formatted = fmtStr % round(float(flt), self._fFmt[1])
         beforeDecimal, afterDecimal = formatted.split(".")
 
-        # Warn about MSB clipping. This shoudl probably raise an exception?
+        # Warn about MSB clipping. This should probably raise an exception?
         if len(beforeDecimal) > self._fFmt[0]:
             wStr = "WARNING: position %f is getting truncated to %s.%s (msb)!"
             warn(wStr % (flt, beforeDecimal, afterDecimal))
             beforeDecimal = beforeDecimal[0:self._fFmt[0]]
 
-        return beforeDecimal, afterDecimal
-
-    def _formatFloat(self, flt):
-        intPos, decPos = self._trimFloatToPrecision(flt)
-        return intPos + decPos
+        return beforeDecimal + radix + afterDecimal
 
     def _fmtCoord(self, xLoc, yLoc, xLab="X", yLab="Y"):
-        xStr = xLab + self._formatFloat(xLoc)
-        yStr = yLab + self._formatFloat(yLoc)
+        xStr = xLab + self._trimFloatToPrecision(xLoc)
+        yStr = yLab + self._trimFloatToPrecision(yLoc)
         return xStr + yStr
 
     def setLayerPolarity(self, polarity="D"):
@@ -137,10 +133,6 @@ class GerberWriter:
         # Make sure an aperature is defined.
         self._checkAperature()
 
-        # unit sanitize
-        endX = float(self._uc(endX))
-        endY = float(self._uc(endY))
-
         formattedCoords = self._fmtCoord(endX, endY)
         dCodeStr = "D%02i" % dCode
         # Stroke w/ current aperature
@@ -159,12 +151,6 @@ class GerberWriter:
     def _arcMove(self, endX, endY, cX, cY, direction, dCode=1):
         # Make sure an aperature is defined.
         self._checkAperature()
-
-        # Unit flatten to the file unit types
-        endX = float(self._uc(endX))
-        endY = float(self._uc(endY))
-        cX = float(self._uc(cX))
-        cY = float(self._uc(cY))
 
         # Make estiamates of the radius, and sanity check the coords
         rEst1 = np.sqrt((self._currentX - cX) ** 2 + (self._currentY - cY) ** 2)

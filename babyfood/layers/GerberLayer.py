@@ -28,33 +28,101 @@ class GerberLayer(GerberWriter):
           4. Lots of Semantic-Sugar
         '''
         GerberWriter.__init__(self, *args, **kwargs)
-        self.polygonMode = type("PolygonMode", (), {"__enter__": self._startPolygonMode,
-                                                    "__exit__": self._stopPolygonMode})
+        pmMethods = {"__enter__": self._startPolygonMode,
+                     "__exit__": self._stopPolygonMode}
+        self.polygonMode = type("PolygonMode", (), pmMethods)
 
-        self._m = HomogenousTransform()
-
+        self._ht = HomogenousTransform()
         self._uc = {"MM": mm, "IN": inch}[self._units]
 
     def setTransformMatrix(self, xform):
-        self._m = xform
+        self._ht = xform
 
-    def defineCircularAperature(self, diameter, setAsCurrent=True):
-        aprDescriptor = "C,%0.03f" % diameter
-        aprCode = self._defineAperature(aprDescriptor, setAsCurrent)
-        return aprCode
+    def _holeHelper(self, hole):
+        assert len(hole) <= 2
+
+        # Get the unit conversions out of the way
+        hole = [self._uc(h).magnitude for h in hole]
+
+        # Nota hole
+        if len(hole) == 0:
+            return ""
+
+        # Circular hole
+        if len(hole) == 1:
+            # unit-convert and scale it
+            ucs = self._ht.scale(hole[0])
+            fStr = self._trimFloatToPrecision(ucs, radix=".")
+            return "X" + fStr
+
+        if len(hole) == 2:
+            length, width = self._ht.project(((hole[0] / 2, hole[1] / 2)))
+            lStr = self._trimFloatToPrecision(length, radix=".")
+            wStr = self._trimFloatToPrecision(width, radix=".")
+            return "X" + lStr + "X" + wStr
+
+    def defineCircularAperature(self, diameter, hole=tuple(), setAsCurrent=True):
+        assert diameter >= 0, "Circular aperature must be >= 0"
+        # Scale and convert the circle
+        d = self._ht.scale(self._uc(diameter).magnitude)
+
+        # Format
+        rStr = self._trimFloatToPrecision(d, radix=".")
+
+        # Register/return
+        aprDescriptor = "C," + rStr + self._holeHelper(hole)
+        return self._defineAperature(aprDescriptor, setAsCurrent)
+
+    def _rectObAperature(self, ro, xSize, ySize, hole=tuple(), setAsCurrent=True):
+        assert ro in ["R", "O"]
+        assert xSize > 0
+        assert ySize > 0
+
+        # Unit convert
+        x = self._uc(xSize).magnitude
+        y = self._uc(ySize).magnitude
+
+        # Project
+        x, y = self._ht.project(((x, y)))
+
+        # Format
+        xStr = self._trimFloatToPrecision(x, radix=".")
+        yStr = self._trimFloatToPrecision(y, radix=".")
+
+        # Register/return
+        aprDescriptor = ro + "," + xStr + "X" + yStr + self._holeHelper(hole)
+        return self._defineAperature(aprDescriptor, setAsCurrent)
+
+    def defineRectangularAperature(self, xSize, ySize, hole=tuple(), setAsCurrent=True):
+        self._rectObAperature("R", xSize, ySize, hole=hole, setAsCurrent=setAsCurrent)
+
+    def defineObroundAperature(self, xSize, ySize, hole=tuple(), setAsCurrent=True):
+        self._rectObAperature("O", xSize, ySize, hole=hole, setAsCurrent=setAsCurrent)
+
+    def definePolygonAperature(self):
+        pass
 
     def moveTo(self, newX, newY):
-        self._linearMove(newX, newY, 2)
+        px, py = self._ht.project(((newX, newY)))
+        self._linearMove(px, py, 2)
 
     def lineTo(self, newX, newY):
-        self._linearMove(newX, newY, 1)
+        px, py = self._ht.project(((newX, newY)))
+        self._linearMove(px, py, 1)
 
     def flashAt(self, newX, newY):
-        self._linearMove(newX, newY, 3)
+        px, py = self._ht.project(((newX, newY)))
+        self._linearMove(px, py, 3)
+
+    def arcLineTo(self, endX, endY, cX, cY, direction):
+        pex, pey = self._ht.project(((endX, endY)))
+        pcx, pcy = self._ht.project(((cX, cY)))
+        self._arcMove(pex, pey, pcx, pcy, direction)
 
     def circle(self, cx, cy, cr):
-        self.moveTo(cx - cr, cy)
-        self.arcLineTo(cx - cr, cy, cx, cy, "CW")
+        px, py = self._ht.project(((cx, cy)))
+        self.moveTo(px - cr, py)
+        self.arcLineTo(px - cr, py, px, py, "CW")
 
     def polygon(self, xs, ys):
         """
@@ -67,13 +135,13 @@ class GerberLayer(GerberWriter):
             for n, (xC, yC) in enumerate(zip(xs, ys)):
                 if n == 0:
                     # Move to the start point
-                    self._linearMove(xC, yC, 2)
+                    self.moveTo(xC, yC)
                 else:
                     # Trace the next segment
-                    self._linearMove(xC, yC, 1)
+                    self.lineTo(xC, yC)
             # If the start and end points are not equal, close the loop
             if not pointsClose((xs[0], ys[0]), (xs[-1], ys[-1])):
-                self._linearMove(xs[0], ys[0], 1)
+                self.lineTo(xs[0], ys[0])
                 warn("WARNING: Call to polygon() is getting automatically closed!")
 
     def filledCircle(self, x, y, r):
