@@ -5,7 +5,7 @@ from babyfood.tests.shared import GerbvTester, _quickTempFilePath
 
 
 class GerberWriterTestCase(GerbvTester):
-    def test_gw_flash(self):
+    def test_gerberlayer_flash(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.1)
@@ -15,7 +15,7 @@ class GerberWriterTestCase(GerbvTester):
 
         self._check_gerber_file(gerbFilePath)
 
-    def test_gw_line(self):
+    def test_gerberlayer_line(self):
         # Generate a temp gerber file
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
@@ -30,7 +30,7 @@ class GerberWriterTestCase(GerbvTester):
 
         self._check_gerber_file(gerbFilePath)
 
-    def test_gw_polygon(self):
+    def test_gerberlayer_polygon(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.001)
@@ -45,7 +45,7 @@ class GerberWriterTestCase(GerbvTester):
 
         self._check_gerber_file(gerbFilePath)
 
-    def test_gw_circle(self):
+    def test_gerberlayer_circle(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
         gw.defineCircularAperature(0.001)
@@ -55,7 +55,7 @@ class GerberWriterTestCase(GerbvTester):
 
         self._check_gerber_file(gerbFilePath)
 
-    def test_gl_aperatures(self):
+    def test_gerberlayer_aperatures(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
 
@@ -67,9 +67,10 @@ class GerberWriterTestCase(GerbvTester):
             gw.defineRectangularAperature(0.5, 0.5, hole=hole)
             gw.flashAt(x, 0)
 
-            gw.defineObroundAperature(0.75, 0.25, hole=hole)
+            gw.defineObroundAperature(0.75, 0.35, hole=hole)
             gw.flashAt(x, 1)
 
         gw.finalize()
 
-        self._check_gerber_file(gerbFilePath)
+        count = self._count_objects_in_file(gerbFilePath)
+        self.assertEqual(count, 9)
