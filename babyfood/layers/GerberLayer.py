@@ -3,7 +3,7 @@ from warnings import warn
 import numpy as np
 
 from babyfood.io.GerberWriter import GerberWriter
-from babyfood.homogenous import HomogenousTransform
+from babyfood.layers import TransformationLayer
 from babyfood.PCBUnits import mm, inch
 
 
@@ -15,7 +15,7 @@ def pointsClose(pt1, pt2, eps=1e-8):
     return dist < eps
 
 
-class GerberLayer(GerberWriter):
+class GerberLayer(GerberWriter, TransformationLayer):
     def __init__(self, *args, **kwargs):
         '''
         GerberLayer is a class for producing gerber vector graphics
@@ -32,11 +32,7 @@ class GerberLayer(GerberWriter):
                      "__exit__": self._stopPolygonMode}
         self.polygonMode = type("PolygonMode", (), pmMethods)
 
-        self._ht = HomogenousTransform()
         self._uc = {"MM": mm, "IN": inch}[self._units]
-
-    def setTransformMatrix(self, xform):
-        self._ht = xform
 
     def _holeHelper(self, hole):
         assert len(hole) <= 2
