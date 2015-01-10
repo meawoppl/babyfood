@@ -8,7 +8,7 @@ import numpy as np
 # Just see if gerbv is alive and kicking
 _gerbvTestCall = ("gerbv", "-V")
 
-# Call with 100dpi, and no border
+# Call with 1024dpi, and no border
 _gerbvCalibratedCall = ("gerbv", "--dpi=1024", "--border=0")
 
 
@@ -79,7 +79,6 @@ class GerbvTester(unittest.TestCase):
         if flatten:
             pngData = pngData.sum(axis=2) / 3
 
-        print(pngData.shape)
         self.assertTrue(pngData.shape > (1, 1))
 
         return pngData

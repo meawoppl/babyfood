@@ -14,6 +14,7 @@ class DrillWriter:
         """
         assert units in ["INCH", "METRIC"]
         self.fmt = fmt
+        self._units = units
 
         if hasattr(pathOrFlo, "write"):
             self.f = pathOrFlo
@@ -45,7 +46,7 @@ class DrillWriter:
 
     def _fmtFloat(self, fl):
         # Round the decimal appropriately
-        fl = round(fl, self.fmt[1])
+        fl = round(float(fl), self.fmt[1])
 
         # Meet excillon silly formatting requirements
         b, a = self.fmt
@@ -57,11 +58,9 @@ class DrillWriter:
 
     def _writeBody(self):
         # Write the tool descriptions
-        uniqueHoleSizes = self._getUniqueHoleSizes()
-
         # MRG Hack: gerbv want to see at least 1 tool even if unused
-        if len(uniqueHoleSizes) == 0:
-            uniqueHoleSizes = [1]
+        if len(self.holes) == 0:
+            self.holes[1] = []
 
         for n, holeSize in enumerate(sorted(self.holes.keys())):
             tCode = "T%i" % (n + 1)
@@ -74,7 +73,7 @@ class DrillWriter:
         for n, holeSize in enumerate(sorted(self.holes.keys())):
             self.f.write("T%i\n" % (n + 1))
 
-            for xC, yC in self.holes.get(holeSize, []):
+            for xC, yC in self.holes[holeSize]:
                 xStr = "X" + self._fmtFloat(xC)
                 yStr = "Y" + self._fmtFloat(yC)
                 self.f.write(xStr + yStr + "\n")
@@ -84,8 +83,7 @@ class DrillWriter:
         Write the header, tools, holes, and finish the file.
         """
         self._fCheck()
-        self._writeTools()
-        self._writeHoles()
+        self._writeBody()
         self.f.write("M30\n")
         self.f.close()
         self.finalized = True
