@@ -15,12 +15,16 @@ class HomogenousTransform:
         determinant = np.linalg.det(self.m)
         assert not np.allclose(determinant, 0)
 
+    def isIsotropicScale(self):
+        return self.m[0, 0] == self.m[1, 1]
+
     def scale(self, value):
-        if self.m[0, 0] != self.m[1, 1]:
+        if not self.isIsotropicScale():
             warn("scale called with non-uniform expansion!")
         return value * self.m[0, 0]
 
     def project(self, xys):
+        xys = np.array(xys).reshape((2, -1))
         assert xys.shape[0] == 2
         length = xys.shape[1]
         paddin = np.ones((1, length))
@@ -57,8 +61,9 @@ class HomogenousTransform:
         return HomogenousTransform(m)
 
 
-class TransformationContext:
+class TransformationContext(HomogenousTransform):
     def __init__(self, m=None):
+        HomogenousTransform.__init__(self)
         self.xformStack = [HomogenousTransform(m)]
         self._updateXform()
 
@@ -84,9 +89,11 @@ class TransformationContext:
         del self._t
 
     def _updateXform(self):
-        self._m = HomogenousTransform()
+        _m = HomogenousTransform()
         for xform in self.xformStack:
-            self._m = self._m * xform
+            _m = _m * xform
+
+        self.m[:] = _m.m
 
     def _pushXform(self, ht):
         self.xformStack.append(ht)
@@ -103,6 +110,3 @@ class TransformationContext:
     def addRotation(self, phi):
         ht = HomogenousTransform.rotation(phi)
         self._pushXform(ht)
-
-    def project(self, xys):
-        return self._m.project(xys)
