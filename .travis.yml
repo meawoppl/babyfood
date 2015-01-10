@@ -22,7 +22,7 @@ before_install:
   # Setup environment
   - conda create -n travisci --yes python=${TRAVIS_PYTHON_VERSION:0:3} numpy scipy pillow pip
   - source activate travisci
-  - pip install units
+  - pip install pint
   # The next couple lines fix a crash with multiprocessing on Travis
   # and are not specific to using Miniconda
   - sudo rm -rf /dev/shm
