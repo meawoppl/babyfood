@@ -9,7 +9,7 @@ import numpy as np
 _gerbvTestCall = ("gerbv", "-V")
 
 # Call with 1024dpi, and no border
-_gerbvCalibratedCall = ("gerbv", "--dpi=1024", "--border=0")
+_gerbvCalibratedCall = ("gerbv", "--dpi=1024", "--border=0", "--background=#000000", "--foreground=#FF0000")
 
 
 def quiet_check_call(call):
@@ -52,11 +52,22 @@ class GerbvTester(unittest.TestCase):
             print("Gerbv Version:" + versionTuple)
         self.assertTrue(newEnough)
 
-    def _check_gerber_file(self, filepath, flatten=True):
+    def _check_gerber_file(self, filepath):
+        '''
+        This call check gerber and excillon drill files
+        it makes a call to gerbv to convert the file into
+        a png based rendering of the artwork.  This will
+        return a single pixel image on failure (dumb),
+        but is generally a quick acid-test for whether
+        the file is even possibly correct.
+
+        It returns a np.array() of the image data for
+        further analysis by the calling unit-test.
+        '''
         # Stupid check #1
         self.assertTrue(os.path.exists(filepath))
 
-        # Next, make sure it get through gerbv export
+        # Next, make sure it gets through gerbv export
         pngPath = _quickTempFilePath(".png")
         txtTrace = _quickTempFilePath(".txt")
         gvCall = _gerbvCalibratedCall + ("-x", "png", "-o", pngPath, filepath)
@@ -75,10 +86,16 @@ class GerbvTester(unittest.TestCase):
 
         # gerbv made it through.  next check the output file is a valid png
         pngData = patched_imread(pngPath)
-
-        if flatten:
-            pngData = pngData.sum(axis=2) / 3
+        pngData = (pngData.sum(axis=2) / 3).astype(np.uint8)
 
         self.assertTrue(pngData.shape > (1, 1))
 
         return pngData
+
+    def _count_objects_in_file(self, filepath):
+        from scipy.ndimage import label
+        imgData = self._check_gerber_file(filepath)
+        imgData[:] = 1 * (imgData == imgData.max())
+
+        _, count = label(imgData)
+        return count
