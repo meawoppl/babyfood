@@ -1,0 +1,128 @@
+import os
+
+from babyfood.homogenous import TransformationContext
+from babyfood.layers.GerberLayer import GerberLayer
+from babyfood.layers.DrillLayer import DrillLayer
+
+
+class PCBArtist:
+    def __init__(self):
+        self.activeSide = None
+        self.activeLayer = None
+        self.layerArtists = {}
+        self.transform = TransformationContext()
+
+    def _constructLayerTuple(self, layerName, layerSide=None):
+        if layerSide is None:
+            return (layerName,)
+        return (layerSide, layerName)
+
+    def _getLayerArtist(self, layerName, layerSide=None):
+        lt = self._constructLayerTuple(layerName, layerSide)
+        assert lt in self.layerArtists, "There is no layer named: " + layerName
+        assert (layerSide in ["", None, "top", "bottom"])
+        return self.layerArtists[lt]
+
+    def _addLayerArtist(self, artist, layerName, layerSide=None):
+        # Tie the artist matrix into ours
+        artist.setTransformMatrix(self.transform.getMatrix())
+
+        # Add it to the list of layers we can draw into
+        lt = self._constructLayerTuple(layerName, layerSide)
+        self.layerArtists[lt] = artist
+
+    def initializeGBRLayer(self, pathOrFLO, layerName, layerSide=None):
+        # Init the gerber writer, and add it
+        gw = GerberLayer(pathOrFLO)
+        self._addLayerArtist(gw, layerName, layerSide)
+
+    def initializeXLNLayer(self, pathOrFLO, layerName):
+        # Add the drill writer also
+        dw = DrillLayer(pathOrFLO)
+        self._addLayerArtist(dw, layerName)
+
+        # Bind addHole so we don't need to switch to the drill layer to add holes
+        self.addHole = dw.addHole
+
+    def setActiveLayer(self, layerName, side=None):
+        # Let the user set both simultaneously
+        if side is not None:
+            self.setActiveSide(side)
+
+        # Look for a layer matching this name on this side
+        self.activeLayer = self._getLayerArtist(layerName, self.activeSide)
+
+    def setActiveSide(self, sideName):
+        sideName = sideName.lower()
+        assert sideName in ["top", "bottom"]
+        self.activeSide = sideName
+
+    def finalize(self):
+        for layerArtist in self.layerArtists.values():
+            layerArtist.finalize()
+
+    # MRG NOTE: Override __dir__ similarly?
+    def __getattr__(self, attrName):
+        if hasattr(self.activeLayer, attrName):
+            return getattr(self.activeLayer, attrName)
+
+        # MRG TODO: Add check for drill funcitons here
+        raise AttributeError
+
+
+class OSHParkPCB(PCBArtist):
+    def __init__(self, folderPath):
+        PCBArtist.__init__(self)
+        self.folderPath = folderPath
+        if not os.path.isdir(folderPath):
+            os.makedirs(folderPath)
+
+        for (layerSide, layerName), path, ext in self._iterateFilePaths():
+            pth = os.path.join(folderPath, layerSide + "_" + layerName + ext)
+            self.initializeGBRLayer(pth, layerName, layerSide)
+
+        pth = os.path.join(folderPath, "drill.xln")
+        self.initializeXLNLayer(pth, "drill")
+
+    def _iterateFilePaths(self):
+        layerTupleToExtension = {("top", "overlay"): "GTO",
+                                 ("top", "mask"): "GTS",
+                                 ("top", "layer"): "GTL",
+                                 ("bottom", "layer"): "GBL",
+                                 ("bottom", "mask"): "GBS",
+                                 ("bottom", "overlay"): "GBO",
+                                 ("", "outline"): "GKO"}
+
+        for (layerSide, layerName), ext in layerTupleToExtension.items():
+            if layerSide:
+                name = layerName + "." + ext
+            else:
+                name = layerName + "." + ext
+            path = os.path.join(self.folderPath, name)
+            yield (layerSide, layerName), path, ext
+
+    def visualize(self):
+        extensionToColor = {"GTL": "#FF0000", "GBL": "#0000FF",
+                            "GTO": "#FFFF00", "GBO": "#AEB404",
+                            "GTS": "#DF01D7", "GBS": "#DF01D7",
+                            "GKO": "#D72424"}
+
+        filenames = []
+        colors = []
+        for ext, code in extensionToColor.items():
+            filenames.append(self.pth + "." + ext)
+            colors.append(code)
+
+        # Add the drill file
+        colors.append("#EEEEEE")
+        filenames.append(self.pth + ".XLN")
+
+        colorString = ""
+        for c in colors:
+            colorString += "--foreground=" + c + " "
+
+        filestring = " ".join(filenames)
+        gerbCallString = "gerbv " + colorString + " " + filestring
+
+        print(gerbCallString)
+        os.system(gerbCallString)
