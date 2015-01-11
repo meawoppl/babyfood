@@ -1,6 +1,6 @@
 from babyfood.io.DrillWriter import DrillWriter
 from babyfood.layers import TransformationLayer
-from babyfood.PCBUnits import mm, inch
+from babyfood.pcb.PCBUnits import mm, inch
 
 
 class DrillLayer(DrillWriter, TransformationLayer):

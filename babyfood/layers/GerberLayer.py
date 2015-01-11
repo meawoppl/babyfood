@@ -4,7 +4,7 @@ import numpy as np
 
 from babyfood.io.GerberWriter import GerberWriter
 from babyfood.layers import TransformationLayer
-from babyfood.PCBUnits import mm, inch
+from babyfood.pcb.PCBUnits import mm, inch
 
 
 def pointsClose(pt1, pt2, eps=1e-8):

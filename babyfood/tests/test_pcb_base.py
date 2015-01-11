@@ -2,7 +2,7 @@ import os
 from itertools import product
 
 from babyfood.tests.shared import GerbvTester, _quickTempFilePath
-from babyfood.PCB import PCBArtist
+from babyfood.pcb.PCBBase import PCBArtist
 
 sides = ["top", "bottom"]
 layers = ["overlay", "copper", "mask"]
