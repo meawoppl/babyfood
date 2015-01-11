@@ -101,6 +101,17 @@ class OSHParkPCB(PCBArtist):
             path = os.path.join(self.folderPath, name)
             yield (layerSide, layerName), path, ext
 
+    def hintedCircle(self, pcb, cX, cY, r):
+        import numpy as np
+        self.defineCircularAperature(0.0, True)
+        self.circle(cX, cY, r)
+        self.writeComment("Begin Circle Hints.  Can be safely ignored")
+        for theta in np.linspace(0, 2 * np.pi, 50)[:-1]:
+            xP = cX + np.cos(theta) * r
+            yP = cY + np.sin(theta) * r
+            self.flashAt(xP, yP)
+        self.writeComment("End Circle Hints.")
+
     def visualize(self):
         extensionToColor = {"GTL": "#FF0000", "GBL": "#0000FF",
                             "GTO": "#FFFF00", "GBO": "#AEB404",
