@@ -1,3 +1,3 @@
-from .PCB import PCBArtist, OSHParkPCB
+from babyfood.pcb.PCBBase import PCBArtist, OSHParkPCB
 
 __all__ = [PCBArtist, OSHParkPCB]
