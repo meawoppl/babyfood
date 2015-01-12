@@ -111,7 +111,7 @@ class GerberWriter:
         self._aprDict[aprString] = newAprCode
 
         # Check the count, and warn when we pass the large mark
-        if len(dCodeNumber) > 999:
+        if dCodeNumber > 999:
             warn("WARNING! Aperature counts above 999 not supported by all machines.")
 
     def _defineAperature(self, aprString, setAsCurrent):
@@ -170,6 +170,8 @@ class GerberWriter:
         # Make estiamates of the radius, and sanity check the coords
         rEst1 = np.sqrt((self._currentX - cX) ** 2 + (self._currentY - cY) ** 2)
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
+
+        # MRG NOTE: This should be sensitive only to the precision of the file.
         if np.abs(rEst1 - rEst2) > 0.001:
             warn("WARNING: Large deviation in computed radius in arc-move!")
 
@@ -203,10 +205,12 @@ class GerberWriter:
         self._currentY = endY
 
     def _startPolygonMode(self):
+        assert not self._inPolygonMode, "Reentrant polygon mode!"
         self._f.write("G36*\n")
         self._inPolygonMode = True
 
     def _stopPolygonMode(self, *args):
+        assert self._inPolygonMode, "Not in polygon mode!"
         # MRG TODO: Check args . . .
         self._f.write("G37*\n")
         self._inPolygonMode = False
