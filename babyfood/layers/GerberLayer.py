@@ -34,6 +34,9 @@ class GerberLayer(GerberWriter, TransformationLayer):
 
         self._uc = {"MM": mm, "IN": inch}[self._units]
 
+        # Predefine a circular aperature with 0 size.
+        self.defineCircularAperature(0)
+
     def _holeHelper(self, hole):
         assert len(hole) <= 2
 

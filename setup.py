@@ -12,5 +12,6 @@ setup(name='babyfood',
                 "babyfood.features",
                 "babyfood.io",
                 "babyfood.layers",
+                "babyfood.pcb",
                 "babyfood.tests"]
       )

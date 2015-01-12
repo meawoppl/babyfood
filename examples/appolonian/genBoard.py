@@ -1,8 +1,8 @@
-import os
+import itertools, os
 
 import numpy as np
 
-from babyfood import OSHParkPCB
+from babyfood.pcb.OSHParkPCB import OSHParkPCB
 
 
 # This is a hack-around to support OSH park,
@@ -25,46 +25,66 @@ rs = np.abs(rs)
 
 # Find the biggest circle
 maxR = rs.max()
+print(maxR)
+print(rs)
 
 # Rescale everything to mave a max diameter of 3in
 rescalar = (25.4) / (2 * maxR)
 rs *= rescalar
 xs *= rescalar
 ys *= rescalar
-rs -= 0.05 * 2.54
+rs -= 0.01 * 2.54
+rs[rs < 0] = 0
 
 maxRIndex = rs.argmax()
 maxR = rs[maxRIndex]
 maxRX = xs[maxRIndex]
 maxRY = ys[maxRIndex]
 
-maxDrillSize = 0.260 * 25.4
-minDrillSize = 0.006 * 25.4
+maxDrillSize = 0.260 * 2.54
+minDrillSize = 0.006 * 2.54
 
 pcb = OSHParkPCB("appolonian")
 
+# Sketch the board outline
 pcb.setActiveLayer("outline")
+pcb.defineCircularAperature(0.0)
+pcb.hintedCircle(0, 0, maxR * 1.05)
 
-# Draw all the full circle layers
-for side in ("top", "bottom"):
-    for layer in ["mask", "copper"]:
-        pcb.setActiveLayer(layer, side)
-        with pcb.polygonMode():
-            pcb.circle(0, 0, maxR)
+
+# Draw all the filled circle layers
+for side, layer in itertools.product(("top", "bottom"), ("mask", "copper")):
+    pcb.setActiveLayer(layer, side)
+    with pcb.polygonMode():
+        pcb.defineCircularAperature(0.0)
+        pcb.circle(0, 0, maxR * 1.05)
 
 
 # Largest drill is 0.1 in
 # Similarly cutout tool diameter is 0.1 in
 # Do some pruning into drills/mechanical routing steps
 for r, x, y in zip(rs, xs, ys):
+    print(r, x, y)
     if r == maxR:
-        print("Skipped max R")
         continue
     if r < minDrillSize:
         # Skip below minimum drill
         continue
     if r > maxDrillSize:
         pcb.setActiveLayer("outline")
-        pcb.hintedCircle(x, y, r)
+        pcb.defineCircularAperature(0.0)
+        pcb.circle(x, y, r)
+
+        pcb.setActiveLayer("overlay", "top")
+        pcb.defineCircularAperature(0.0)
+        pcb.circle(x, y, r * 0.75)
+
+        pcb.setActiveLayer("overlay", "bottom")
+        pcb.defineCircularAperature(0.0)
+        pcb.circle(x, y, r * 0.75)
+
     else:
-        pcb.addHole(r, x, y)
+        pcb.addHole(x, y, r * 2)
+
+pcb.finalize()
+pcb.visualize()

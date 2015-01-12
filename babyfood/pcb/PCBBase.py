@@ -7,37 +7,49 @@ class PCBArtist:
     def __init__(self):
         self.activeSide = None
         self.activeLayer = None
-        self.layerArtists = {}
+        self.layerArtists = {"top": {}, "bottom": {}, None: {}}
         self.transform = TransformationContext()
 
-    def _constructLayerTuple(self, layerName, layerSide=None):
-        if layerSide is None:
-            return (layerName,)
-        return (layerSide, layerName)
+    def _sanityCheckNameSide(self, name, side):
+        # Sanity check the arguments
+        assert name in ["copper", "overlay", "mask", "solder", "drill", "outline"]
+        assert side in [None, "top", "bottom"]
+        # MRG TODO: more comprehensive when format settles
+        # At presnt drill layers could be in the top bucket etc.
 
-    def _getLayerArtist(self, layerName, layerSide=None):
-        lt = self._constructLayerTuple(layerName, layerSide)
-        assert lt in self.layerArtists, "There is no layer named: " + layerName
-        assert (layerSide in ["", None, "top", "bottom"])
-        return self.layerArtists[lt]
+    def _getLayerArtist(self, layerName, layerSide):
+        self._sanityCheckNameSide(layerName, layerSide)
 
-    def _addLayerArtist(self, artist, layerName, layerSide=None):
+        # Check the unsided artists first
+        if layerName in self.layerArtists[None]:
+            return self.layerArtists[None][layerName]
+
+        # Check if the layer exists
+        if layerName not in self.layerArtists[layerSide]:
+            layerList = repr(list(self.layerArtists.keys()))
+            raise RuntimeError("There is no layer named: %s in %s" % (layerName, layerList))
+
+        # Return the layer!
+        return self.layerArtists[layerSide][layerName]
+
+    def _addLayerArtist(self, artist, layerName, layerSide):
+        self._sanityCheckNameSide(layerName, layerSide)
+
         # Tie the artist matrix into ours
         artist.setTransformMatrix(self.transform.getMatrix())
 
         # Add it to the list of layers we can draw into
-        lt = self._constructLayerTuple(layerName, layerSide)
-        self.layerArtists[lt] = artist
+        self.layerArtists[layerSide][layerName] = artist
 
     def initializeGBRLayer(self, pathOrFLO, layerName, layerSide=None):
         # Init the gerber writer, and add it
         gw = GerberLayer(pathOrFLO)
         self._addLayerArtist(gw, layerName, layerSide)
 
-    def initializeXLNLayer(self, pathOrFLO, layerName):
+    def initializeXLNLayer(self, pathOrFLO):
         # Add the drill writer also
         dw = DrillLayer(pathOrFLO)
-        self._addLayerArtist(dw, layerName)
+        self._addLayerArtist(dw, "drill", None)
 
         # Bind addHole so we don't need to switch to the drill layer to add holes
         self.addHole = dw.addHole
@@ -56,8 +68,9 @@ class PCBArtist:
         self.activeSide = sideName
 
     def finalize(self):
-        for layerArtist in self.layerArtists.values():
-            layerArtist.finalize()
+        for sideName, layerArtists in self.layerArtists.items():
+            for layerName, layerArtist in layerArtists.items():
+                layerArtist.finalize()
 
     # MRG NOTE: Override __dir__ similarly?
     def __getattr__(self, attrName):

@@ -55,6 +55,7 @@ class GerberWriter:
         self._f.write("%FSLA" + fmtStr + "*%\n")
         self._f.write("%MO" + units + "*%\n")
 
+        self._currentAperatureCode = None
         self.setLayerPolarity()
 
     def _trimFloatToPrecision(self, flt, radix=""):
@@ -86,12 +87,13 @@ class GerberWriter:
 
     def writeComment(self, comment):
         assert "*" not in comment, "* character not allowed in comments"
-        self._f.write("G04" + comment + "*\n")
+        self._f.write("G04 " + comment + "*\n")
 
     def _checkAperature(self):
-        # Aperatures not needed for polygon mode
+        # Aperatures not needed for polygon mode, so punt this check
         if self._inPolygonMode:
             return
+
         if not self._currentAperatureCode:
             raise RuntimeError("No Aperature defined for current move!")
 
@@ -99,20 +101,32 @@ class GerberWriter:
         self._forceHeader()
         self._forcePolarity()
 
-    def _defineAperature(self, aprString, setAsCurrent):
-        if aprString not in self._aprDict:
-            newAprCode = "D%i" % (10 + len(self._aprDict))
-            self._f.write("%AD" + newAprCode + aprString + "*%\n")
-            self._aprDict[aprString] = newAprCode
+    def _writeAperatureToFile(self, aprString):
+        # Format the aperature to the next available D-code
+        newAprCode = "D%i" % (10 + len(self._aprDict))
 
+        # Write it to the file, and add it to the index
+        self._f.write("%AD" + newAprCode + aprString + "*%\n")
+        self._aprDict[aprString] = newAprCode
+
+        # Check the count, and warn when we pass the large mark
         if len(self._aprDict) > 999:
             warn("WARNING! Aperature counts above 999 not supported by all machines.")
 
+    def _defineAperature(self, aprString, setAsCurrent):
+        # See if we already have this aperature
+        # If not, add it to the aperature registry
+        if aprString not in self._aprDict:
+            self._writeAperatureToFile(aprString)
+
+        # Look up the aperature
         thisAprCode = self._aprDict[aprString]
 
+        # Set it to current if requested
         if setAsCurrent:
             self.setAperature(thisAprCode)
 
+        # Return the code of possible reuse
         return thisAprCode
 
     def setAperature(self, aprCode):

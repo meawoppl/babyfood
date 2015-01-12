@@ -24,7 +24,7 @@ def _init_pcb_stack():
 
     # Do a drill layer too
     p = os.path.join(tempFolder, "drill.xln")
-    art.initializeXLNLayer(p, "drill")
+    art.initializeXLNLayer(p)
     paths.append(p)
 
     return art, paths
