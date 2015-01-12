@@ -1,18 +1,18 @@
 from babyfood.io.DrillWriter import DrillWriter
 from babyfood.layers import TransformationLayer
-from babyfood.pcb.PCBUnits import mm, inch
+from babyfood.pcb.PCBUnits import toMM, toInch
 
 
 class DrillLayer(DrillWriter, TransformationLayer):
     def __init__(self, *args, **kwargs):
         DrillWriter.__init__(self, *args, **kwargs)
-        self._uc = {"METRIC": mm, "INCH": inch}[self._units]
+        self._uc = {"METRIC": toMM, "INCH": toInch}[self._units]
 
     def addHole(self, x, y, d):
         # Unit convert it all
-        x = self._uc(x).magnitude
-        y = self._uc(y).magnitude
-        d = self._uc(d).magnitude
+        x = self._uc(x)
+        y = self._uc(y)
+        d = self._uc(d)
 
         # Scale/move
         x, y = self._ht.project(((x, y)))

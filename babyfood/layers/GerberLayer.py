@@ -4,7 +4,7 @@ import numpy as np
 
 from babyfood.io.GerberWriter import GerberWriter
 from babyfood.layers import TransformationLayer
-from babyfood.pcb.PCBUnits import mm, inch
+from babyfood.pcb.PCBUnits import toMM, toInch
 
 
 def pointsClose(pt1, pt2, eps=1e-8):
@@ -32,7 +32,7 @@ class GerberLayer(GerberWriter, TransformationLayer):
                      "__exit__": self._stopPolygonMode}
         self.polygonMode = type("PolygonMode", (), pmMethods)
 
-        self._uc = {"MM": mm, "IN": inch}[self._units]
+        self._uc = {"MM": toMM, "IN": toInch}[self._units]
 
         # Predefine a circular aperature with 0 size.
         self.defineCircularAperature(0)
@@ -41,7 +41,7 @@ class GerberLayer(GerberWriter, TransformationLayer):
         assert len(hole) <= 2
 
         # Get the unit conversions out of the way
-        hole = [self._uc(h).magnitude for h in hole]
+        hole = [self._uc(h) for h in hole]
 
         # Nota hole
         if len(hole) == 0:
@@ -63,7 +63,7 @@ class GerberLayer(GerberWriter, TransformationLayer):
     def defineCircularAperature(self, diameter, hole=tuple(), setAsCurrent=True):
         assert diameter >= 0, "Circular aperature must be >= 0"
         # Scale and convert the circle
-        d = self._ht.scale(self._uc(diameter).magnitude)
+        d = self._ht.scale(self._uc(diameter))
 
         # Format
         rStr = self._trimFloatToPrecision(d, radix=".")
@@ -78,8 +78,8 @@ class GerberLayer(GerberWriter, TransformationLayer):
         assert ySize > 0
 
         # Unit convert
-        x = self._uc(xSize).magnitude
-        y = self._uc(ySize).magnitude
+        x = self._uc(xSize)
+        y = self._uc(ySize)
 
         # Project
         x, y = self._ht.project(((x, y)))
@@ -102,18 +102,30 @@ class GerberLayer(GerberWriter, TransformationLayer):
         pass
 
     def moveTo(self, newX, newY):
+        newX = self._uc(newX)
+        newY = self._uc(newY)
         px, py = self._ht.project(((newX, newY)))
         self._linearMove(px, py, 2)
 
     def lineTo(self, newX, newY):
+        newX = self._uc(newX)
+        newY = self._uc(newY)
         px, py = self._ht.project(((newX, newY)))
         self._linearMove(px, py, 1)
 
     def flashAt(self, newX, newY):
+        newX = self._uc(newX)
+        newY = self._uc(newY)
         px, py = self._ht.project(((newX, newY)))
         self._linearMove(px, py, 3)
 
     def arcLineTo(self, endX, endY, cX, cY, direction):
+        endX = self._uc(endX)
+        endY = self._uc(endX)
+
+        cX = self._uc(cX)
+        cY = self._uc(cX)
+
         pex, pey = self._ht.project(((endX, endY)))
         pcx, pcy = self._ht.project(((cX, cY)))
         self._arcMove(pex, pey, pcx, pcy, direction)

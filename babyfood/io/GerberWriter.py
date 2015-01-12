@@ -23,9 +23,9 @@ class GerberWriter:
       2. Aperature generation and unification
       3. Layer/polarity settings
       4. Formatting + precision/underflow concerns.
-      5. Some machiene/legacy specific considerations of format
+      5. Some machine/legacy specific considerations of format
     """
-    def __init__(self, pathOrFlo, fFmt=(4, 4), units="MM", comment=None):
+    def __init__(self, pathOrFlo, fFmt=(4, 6), units="MM", comment=None):
         if hasattr(pathOrFlo, "write"):
             self._f = pathOrFlo
         else:

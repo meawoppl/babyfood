@@ -6,11 +6,13 @@ _unitRegistry.define("mil = inch / 1000")
 
 def _toUnit(floatOrUnited, unitName):
     try:
-        return floatOrUnited.to(unitName)
+        return floatOrUnited.to(unitName).magnitude
     except:
-        return _unitRegistry.Quantity(floatOrUnited, unitName)
+        return _unitRegistry.Quantity(floatOrUnited, unitName).magnitude
 
-inch = lambda f: _toUnit(f, 'inch')
-mil = lambda f: _toUnit(f, "mil")
-cm = lambda f: _toUnit(f, "cm")
-mm = lambda f: _toUnit(f, "mm")
+toInch = lambda f: _toUnit(f, 'inch')
+toMM = lambda f: _toUnit(f, 'inch')
+inch = _unitRegistry.inch
+mil = _unitRegistry.mil
+cm = _unitRegistry.cm
+mm = _unitRegistry.mm
