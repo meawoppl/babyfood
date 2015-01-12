@@ -103,14 +103,15 @@ class GerberWriter:
 
     def _writeAperatureToFile(self, aprString):
         # Format the aperature to the next available D-code
-        newAprCode = "D%i" % (10 + len(self._aprDict))
+        dCodeNumber = 10 + len(self._aprDict)
+        newAprCode = "D%i" % dCodeNumber
 
         # Write it to the file, and add it to the index
         self._f.write("%AD" + newAprCode + aprString + "*%\n")
         self._aprDict[aprString] = newAprCode
 
         # Check the count, and warn when we pass the large mark
-        if len(self._aprDict) > 999:
+        if len(dCodeNumber) > 999:
             warn("WARNING! Aperature counts above 999 not supported by all machines.")
 
     def _defineAperature(self, aprString, setAsCurrent):
