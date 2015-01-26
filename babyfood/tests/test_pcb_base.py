@@ -30,7 +30,7 @@ def _init_pcb_stack():
     return art, paths
 
 
-class GerberWriterTestCase(GerbvTester):
+class PCBBaseTestCase(GerbvTester):
     def test_pcb_simple(self):
         art, paths = _init_pcb_stack()
         # Add some flashes + holes
