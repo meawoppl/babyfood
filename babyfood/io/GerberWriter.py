@@ -172,9 +172,13 @@ class GerberWriter:
         rEst2 = np.sqrt((endX - cX) ** 2 + (endY - cY) ** 2)
 
         # MRG NOTE: This should be sensitive only to the precision of the file.
-        if np.abs(rEst1 - rEst2) > 0.001:
+        errEst = rEst1 - rEst2
+        if np.abs(errEst) > 0.001:
             warn("WARNING: Large deviation in computed radius in arc-move!")
-
+            print("Current:", self._currentX, self._currentY)
+            print("Desitnation:", endX, endY)
+            print("Rest:", rEst1, rEst2)
+            print()
         dCode = "D%02i" % dCode
 
         if direction == "CW":
