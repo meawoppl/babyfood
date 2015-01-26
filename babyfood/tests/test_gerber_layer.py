@@ -4,7 +4,7 @@ from babyfood.layers.GerberLayer import GerberLayer
 from babyfood.tests.shared import GerbvTester, _quickTempFilePath
 
 
-class GerberWriterTestCase(GerbvTester):
+class GerberLayerTestCase(GerbvTester):
     def test_gerberlayer_flash(self):
         gerbFilePath = _quickTempFilePath(".gbr")
         gw = GerberLayer(gerbFilePath)
@@ -28,6 +28,20 @@ class GerberWriterTestCase(GerbvTester):
         gw.lineTo(10, 10)
         gw.finalize()
 
+        self._check_gerber_file(gerbFilePath)
+
+    def test_gerberlayer_arc(self):
+        gerbFilePath = _quickTempFilePath(".gbr")
+        gw = GerberLayer(gerbFilePath)
+        gw.defineCircularAperature(0.001)
+
+        gw.moveTo(1, 0)
+        gw.arcLineTo(0, 1, 0, 0, "CW")
+
+        gw.defineCircularAperature(0.1)
+        gw.arcLineTo(-1, 0, 0, 0, "CW")
+
+        gw.finalize()
         self._check_gerber_file(gerbFilePath)
 
     def test_gerberlayer_polygon(self):
