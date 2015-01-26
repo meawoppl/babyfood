@@ -2,6 +2,7 @@ import itertools, os
 
 import numpy as np
 
+from babyfood.pcb.PCBUnits import inch
 from babyfood.pcb.OSHParkPCB import OSHParkPCB
 
 
@@ -22,7 +23,7 @@ def produceGasketPCB(csvFileName, outputFolderName):
     rs *= rescalar
     xs *= rescalar
     ys *= rescalar
-    rs -= 0.01 * 2.54
+    rs -= 0.01 * inch
     rs[rs < 0] = 0
 
     maxRIndex = rs.argmax()
@@ -30,8 +31,8 @@ def produceGasketPCB(csvFileName, outputFolderName):
     maxRX = xs[maxRIndex]
     maxRY = ys[maxRIndex]
 
-    maxDrillSize = 0.260 * 2.54
-    minDrillSize = 0.006 * 2.54
+    maxDrillSize = 0.260 * inch
+    minDrillSize = 0.006 * inch
 
     pcb = OSHParkPCB(outputFolderName)
 
