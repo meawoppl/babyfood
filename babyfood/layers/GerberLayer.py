@@ -121,7 +121,7 @@ class GerberLayer(GerberWriter, TransformationLayer):
 
     def arcLineTo(self, endX, endY, cX, cY, direction):
         endX = self._uc(endX)
-        endY = self._uc(endX)
+        endY = self._uc(endY)
 
         cX = self._uc(cX)
         cY = self._uc(cX)
@@ -131,9 +131,9 @@ class GerberLayer(GerberWriter, TransformationLayer):
         self._arcMove(pex, pey, pcx, pcy, direction)
 
     def circle(self, cx, cy, cr):
-        px, py = self._ht.project(((cx, cy)))
-        self.moveTo(px - cr, py)
-        self.arcLineTo(px - cr, py, px, py, "CW")
+        assert cr > 0
+        self.moveTo(cx - cr, cy)
+        self.arcLineTo(cx - cr, cy, cx, cy, "CW")
 
     def polygon(self, xs, ys):
         """
