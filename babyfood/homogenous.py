@@ -16,12 +16,19 @@ class HomogenousTransform:
         assert not np.allclose(determinant, 0)
 
     def isIsotropicScale(self):
-        return self.m[0, 0] == self.m[1, 1]
+        return np.abs(self.m[0, 0]) == np.abs(self.m[1, 1])
 
     def scale(self, value):
         if not self.isIsotropicScale():
-            warn("scale called with non-uniform expansion!")
-        return value * self.m[0, 0]
+            warn("scale() called with non-uniform expansion!")
+
+        projected0 = self.project([[0, 0]])
+        projected1 = self.project([[1, 0]])
+
+        pDelta = projected1 - projected0
+        scale = np.sqrt(np.sum(pDelta * pDelta))
+
+        return value * scale
 
     def project(self, xys):
         xys = np.array(xys).reshape((2, -1))
@@ -31,7 +38,7 @@ class HomogenousTransform:
         xyw = np.concatenate((xys, paddin), axis=0)
         prod = self.m * xyw
         prod /= prod[2, :]
-        return prod[0:2, :]
+        return np.array(prod[0:2, :])
 
     def __mul__(self, other):
         return HomogenousTransform(self.m * other.m)
@@ -42,15 +49,15 @@ class HomogenousTransform:
         s = np.sin
         c = np.cos
         m = np.matrix([[c(phi), -s(phi), 0],
-                       [s(phi),  c(phi), 0],
-                       [0,       0,      1]])
+                       [s(phi), +c(phi), 0],
+                       [000000, 0000000, 1]])
         return HomogenousTransform(m)
 
     @staticmethod
     def translation(dx, dy):
         m = np.matrix([[1, 0, dx],
                        [0, 1, dy],
-                       [0, 0,  1]])
+                       [0, 0, 1]])
         return HomogenousTransform(m)
 
     @staticmethod
@@ -67,24 +74,43 @@ class TransformationContext(HomogenousTransform):
         self.xformStack = [HomogenousTransform(m)]
         self._updateXform()
 
-        tMethods = {"__init__": self._transform_init,
-                    "__enter__": self._translation_entr,
-                    "__exit__": self._popXform}
-        self.translation = type("", (), tMethods)
+        # Make the "with transform" handles
+        self.translation = self._mfgTransform(self._tr_entr)
+        self.rotation = self._mfgTransform(self._ro_entr)
+        self.flipX = self._mfgTransform(self._fx_entr)
+        self.flipY = self._mfgTransform(self._fy_entr)
 
-        rMethods = {"__init__": self._transform_init,
-                    "__enter__": self._rotation_entr,
+    # Helper for the above with handles
+    def _mfgTransform(self, enterFunction):
+        tMethods = {"__init__": self._transform_init,
+                    "__enter__": enterFunction,
                     "__exit__": self._popXform}
-        self.rotation = type("", (), rMethods)
+        return type("", (), tMethods)
 
     def _transform_init(self, *args):
         self._t = args
 
-    def _translation_entr(self):
+    def _fx_entr(self):
+        m = np.array(((-1, 0, 0),
+                      (0, 1, 0),
+                      (0, 0, 1)))
+        ht = HomogenousTransform(m)
+        self._pushXform(ht)
+        del self._t
+
+    def _fy_entr(self):
+        m = np.array(((1, 0, 0),
+                      (0, -1, 0),
+                      (0, 0, 1)))
+        ht = HomogenousTransform(m)
+        self._pushXform(ht)
+        del self._t
+
+    def _tr_entr(self):
         self.addTranslation(*self._t)
         del self._t
 
-    def _rotation_entr(self):
+    def _ro_entr(self):
         self.addRotation(*self._t)
         del self._t
 
@@ -113,3 +139,6 @@ class TransformationContext(HomogenousTransform):
 
     def getMatrix(self):
         return self.m
+
+    def copyCurrentTransform(self):
+        return HomogenousTransform(self.m.copy())
