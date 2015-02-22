@@ -2,6 +2,8 @@
 
 from babyfood.pcb.PCBUnits import mil
 from babyfood.features.basic import CenteredRectangle, FilledCenteredRectangle
+from babyfood.components.ABC import AbstractSMAComponent
+
 
 resistorsParams = {
     "0102": (0.65, 1.10, 1.40, 2.85),
@@ -13,7 +15,7 @@ resistorsParams = {
     "1206": (1.50, 1.25, 1.75, 4.00)}
 
 
-class SMAResistor:
+class SMAResistor(AbstractSMAComponent):
     def __init__(self, codeString):
         # Names on datasheet ref'ed above
         _g, _y, _x, _z = resistorsParams[codeString]
