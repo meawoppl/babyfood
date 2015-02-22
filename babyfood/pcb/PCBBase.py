@@ -54,6 +54,9 @@ class PCBArtist:
         # Bind addHole so we don't need to switch to the drill layer to add holes
         self.addHole = dw.addHole
 
+    def getActiveLayer(self):
+        return self.activeLayer
+
     def setActiveLayer(self, layerName, side=None):
         # Let the user set both simultaneously
         if side is not None:
@@ -61,6 +64,9 @@ class PCBArtist:
 
         # Look for a layer matching this name on this side
         self.activeLayer = self._getLayerArtist(layerName, self.activeSide)
+
+    def getActiveSide(self):
+        return self.activeSide
 
     def setActiveSide(self, sideName):
         sideName = sideName.lower()
