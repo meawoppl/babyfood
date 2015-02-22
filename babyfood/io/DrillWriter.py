@@ -42,6 +42,7 @@ class DrillWriter:
         Add a hole at the specified x,y location with the designated diameter.
         """
         self._fCheck()
+        assert abs(diameter) > 1e-10, "Hole probably defective. Size: %f" % diameter
         self.holes[diameter] = self.holes.get(diameter, []) + [(xLoc, yLoc)]
 
     def _fmtFloat(self, fl):
