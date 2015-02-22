@@ -1,9 +1,10 @@
 from babyfood.pcb.PCBUnits import toMM
 from babyfood.features.basic import CircularVia, CenteredRectangle
+from babyfod.components.ABC import AbstractTHComponent
 
 
 # http://portal.fciconnect.com/Comergent//fci/drawing/c-cd-0021.pdf
-class DB26:
+class DB26(AbstractTHComponent):
     def __init__(self):
         self._a = toMM(39.14)
         self._b = toMM(33.32)

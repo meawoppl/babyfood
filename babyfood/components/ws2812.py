@@ -3,9 +3,10 @@
 
 from babyfood.pcb.PCBUnits import toMM
 from babyfood.features.basic import CenteredRectangle, FilledCenteredRectangle, FilledCenteredCircle
+from babyfood.components.ABC import AbstractSMAComponent
 
 
-class WS2812:
+class WS2812(AbstractSMAComponent):
     _pinNumbers = [i + 1 for i in range(6)]
     _pinNames = ["DOUT", "DIN", "VCC", "", "VDD", "VSS"]
 
