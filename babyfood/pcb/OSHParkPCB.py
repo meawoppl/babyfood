@@ -49,7 +49,7 @@ class OSHParkPCB(PCBArtist):
         self.writeComment("End Circle Hints.")
 
     def visualize(self):
-        # The below colorscheme is pretty similar to altium's defaults
+        # The below colorscheme is pretty similar to altium/eagles defaults
         extensionToColor = {"GTL": "#FF0000", "GBL": "#0000FF",
                             "GTO": "#FFFF00", "GBO": "#AEB404",
                             "GTS": "#DF01D7", "GBS": "#DF01D7",
