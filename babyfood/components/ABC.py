@@ -2,10 +2,11 @@ from babyfood.homogenous import HomogenousTransform
 
 
 class AbstractComponent:
-    _connectorIDs = []
-    _connectorNames = []
-    _connectorXYs = []
-    _xform = HomogenousTransform()
+    def __init__(self):
+        self._connectorIDs = []
+        self._connectorNames = []
+        self._connectorXYs = []
+        self._xform = HomogenousTransform()
 
     def _addConnector(self, idee, xy, name=None):
         if name is None:
@@ -28,7 +29,7 @@ class AbstractComponent:
     def getConnectorNames(self):
         return self._connectorNames
 
-    def getConnectorXYs(self):
+    def getConnectorCenters(self):
         return self._xform.project(self._connectorXYs)
 
     def place(self, ctx):
@@ -37,10 +38,10 @@ class AbstractComponent:
 
 
 class AbstractSMAComponent(AbstractComponent):
-    def addPin(self, idee, xy, name=None):
+    def addPad(self, idee, xy, name=None):
         self._addConnector(idee, xy, name)
 
 
 class AbstractTHComponent(AbstractComponent):
-    def addPad(self, idee, xy, name=None):
+    def addPin(self, idee, xy, name=None):
         self._addConnector(idee, xy, name)

@@ -7,7 +7,8 @@ from babyfod.components.ABC import AbstractTHComponent
 
 class BNC(AbstractTHComponent):
     def __init__(self):
-        pass
+        self.addPin(1, (0, 0), "+")
+        self.addPin(2, (0, 0), "+")
 
     def draw(self, ctx):
         # Mounting holes
