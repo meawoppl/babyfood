@@ -5,7 +5,7 @@
 import os, subprocess
 from distutils.core import setup
 
-versionFileName = os.path.join(os.path.dirname(__file__), "KESMAcq", '_version.py')
+versionFileName = os.path.join(os.path.dirname(__file__), "babyfood", '_version.py')
 version_git = subprocess.check_output(["git", "describe", "--long", "--tags"]).decode("ascii").rstrip()
 vn, build, shortHash = version_git.split("-")
 
