@@ -67,3 +67,27 @@ class CircularVia:
                 fcc.draw(ctx)
         # Drill the hole
         ctx.addHole(0, 0, self._hr * 2)
+
+
+class SquareVia:
+    def __init__(self, width, height, holeRadius):
+        assert width > 0
+        assert height > 0
+        assert holeRadius > 0
+        assert width > holeRadius
+        assert height > holeRadius
+
+        self._w = width
+        self._h = height
+        self._hr = holeRadius
+
+    def draw(self, ctx):
+        # Draw the pad on copper and overlay layers
+        rect = FilledCenteredRectangle(self._w, self._h)
+        for side in ("top", "bottom"):
+            ctx.setActiveSide(side)
+            for layer in ("mask", "copper"):
+                ctx.setActiveLayer(layer)
+                rect.draw(ctx)
+        # Drill the hole
+        ctx.addHole(0, 0, self._hr * 2)
