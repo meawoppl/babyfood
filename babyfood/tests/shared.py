@@ -22,7 +22,7 @@ def quiet_check_call(call):
 def patched_imread(imgPath):
     '''
     Return a binarized image of a png.
-    Everythign that is black is 0, all
+    Everything that is black is 0, all
     else is 1.
     '''
     with open(imgPath, "rb") as img_file:

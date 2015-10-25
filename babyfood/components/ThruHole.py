@@ -25,6 +25,7 @@ class THTwoLead(AbstractTHComponent):
                 pin.draw(ctx)
 
         # Outline
+        ctx.setActiveSide("top")
         ctx.setActiveLayer("overlay")
         re = CenteredRectangle(toMM(9.5), toMM(5))
         re.draw(ctx)

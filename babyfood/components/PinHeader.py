@@ -31,3 +31,39 @@ class PinHeader(AbstractTHComponent):
         for n, x, y in self._computePinCoords():
             with ctx.transform.translation(x, y):
                 stdVia.draw(ctx)
+
+
+# https://www.sparkfun.com/datasheets/Prototyping/Connectors/JST%282%29-01548.pdf
+# https://www.sparkfun.com/products/9749
+class JSTConnector(AbstractTHComponent):
+    def __init__(self, nPins=2, spacing=toMM(2)):
+        self._n = nPins
+        self._s = spacing
+
+    def _computePinCoords(self):
+        xCenter = self._s * (self._n - 1) / 2
+        for n in range(self._n):
+            xc = (n * self._s) - xCenter
+            print(xc)
+            yield xc
+
+    def draw(self, ctx):
+        # pins + viae
+        for x in self._computePinCoords():
+            with ctx.transform.translation(x, 0):
+                stdVia.draw(ctx)
+
+        # Outline!
+        b = toMM((self._n * 2) + 2)
+        backEdge = toMM(1.8)
+        frontEdge = -toMM(6.25)
+        leftEdge = -b / 2
+        rightEdge = b / 2
+
+        print(leftEdge, rightEdge)
+        ctx.setActiveLayer("overlay")
+        ctx.moveTo(leftEdge, backEdge)
+        ctx.lineTo(leftEdge, frontEdge)
+        ctx.lineTo(rightEdge, frontEdge)
+        ctx.lineTo(rightEdge, backEdge)
+        ctx.lineTo(leftEdge, backEdge)

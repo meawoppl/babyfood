@@ -78,5 +78,5 @@ def produceGasketPCB(csvFileName, outputFolderName):
 
 
 if __name__ == "__main__":
-    produceGasketPCB("earHoops.csv", "earhoops")
-    produceGasketPCB("gasker.csv", "gasket")
+    produceGasketPCB("earHoops.csv", "~/bf/earhoops")
+    produceGasketPCB("gasker.csv", "~/bf/gasket")
