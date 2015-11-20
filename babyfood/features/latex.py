@@ -1,6 +1,6 @@
 import os
+import subprocess
 import tempfile
-from pprint import pprint
 
 import numpy as np
 from bs4 import BeautifulSoup
@@ -25,6 +25,7 @@ class PathParsePlay:
         self.startPos = None
 
     def parsePathString(self, pathString):
+        # MRG TODO: Document me
         pathElements = pathString.split()
 
         self.commandList = []
@@ -36,8 +37,6 @@ class PathParsePlay:
                 if currentCommand != []:
                     self.commandList.append(currentCommand)
                 currentCommand = [element]
-
-        # pprint(self.commandList)
 
     def _play_M(self, ctx, numbers):
         numbers = np.array(numbers).reshape((-1, 2))
@@ -94,17 +93,46 @@ class PathParsePlay:
             self.commandFuncs[moveName](ctx, numbers)
 
 
+def quiet_check_call(call):
+    import tempfile
+    dn = open(os.devnull, "wb")
+    dn = tempfile.TemporaryFile("w+")
+    result = subprocess.check_call(call, stdout=dn, stderr=dn)
+    dn.flush()
+    dn.seek(0)
+
+    return result, dn.read()
+
+
 class TexFeature:
-    def textToSVG(self, text, headers=""):
+    def __init__(self, headers=""):
+        self.headers = headers
+
+    def textToSVG(self, text):
         # Create the TeX file
         d = tempfile.mkdtemp()
         texFile = tempfile.NamedTemporaryFile(mode='w+', suffix=".tex", dir=d)
-        texFile.write(texTemplate % (headers, text))
+        texFile.write(texTemplate % (self.headers, text))
         texFile.flush()
 
         # TeX -> pdf file
-        os.system("pdflatex -output-directory %s %s" % (d, texFile.name))
+        call = ("pdflatex", "-output-directory", d, texFile.name)
+        result, debugText = quiet_check_call(call)
+        if result != 0:
+            # MRG NOTE: I am not sure how too reproduce the non-zero return codes here.
+            print("Possible error in latex: %i" % result)
+            print("Input:")
+            print("***" * 10)
+            texFile.seek(0)
+            print(texFile.read())
+            print("***" * 10)
 
+            print("Output:")
+            print("***" * 10)
+            print(debugText)
+            print("***" * 10)
+
+        # Pop a suffix off, and add a new one
         reSuffix = lambda filepath, newSuffix: os.path.splitext(filepath)[0] + "." + newSuffix
 
         # pdf file -> svg file
@@ -112,9 +140,8 @@ class TexFeature:
         pdfPath = reSuffix(texPath, "pdf")
         svgPath = reSuffix(texPath, "svg")
 
-        call = "pdf2svg %s %s" % (pdfPath, svgPath)
-        print(call)
-        os.system(call)
+        call = ("pdf2svg", pdfPath, svgPath)
+        assert quiet_check_call(call), "Error during pdf->svg conversion"
 
         # Read the file, and return the soup.
         svgData = open(svgPath).read()
@@ -138,24 +165,15 @@ class TexFeature:
         # Find the strikes of the above symbols
         for gee in svgSoup.svg.find_all("g", recursive=False):
             for use in gee.find_all("use"):
+                # Dereference the ID to the symbol to draw
                 strikeID = use["xlink:href"][1:]
-                x, y = float(use["x"]), float(use["y"])
-                print(strikeID, x, y)
                 ppp = glyphNameToPathPlayer[strikeID]
+
+                # Determine where the symbol goes, and scooch the context
+                x, y = float(use["x"]), float(use["y"])
                 with ctx.transform.translation(x, y):
+                    # Draw the symbol!
                     ppp.playCommandListIntoContext(ctx)
-
-
-        # ppp.playCommandListIntoContext(ctx)
-
-        # print("Symbols:")
-        # for s in root.findall("defs"):
-        #     print(s.attrib)
-
-        # print("**" * 20)
-        # print("Strikes:")
-        # for s in root.findall("use"):
-        #     print(s.attrib)
 
 
 if __name__ == "__main__":
