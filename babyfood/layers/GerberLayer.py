@@ -99,7 +99,7 @@ class GerberLayer(GerberWriter, TransformationLayer):
         self._rectObAperature("O", xSize, ySize, hole=hole, setAsCurrent=setAsCurrent)
 
     def definePolygonAperature(self):
-        pass
+        raise NotImplemented()
 
     def moveTo(self, newX, newY):
         newX = self._uc(newX)
