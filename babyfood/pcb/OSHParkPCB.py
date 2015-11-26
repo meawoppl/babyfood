@@ -2,6 +2,14 @@ import os
 
 from babyfood.pcb.PCBBase import PCBArtist
 
+_layerTupleToExtension = {("top", "overlay"): "GTO",
+                          ("top", "mask"): "GTS",
+                          ("top", "copper"): "GTL",
+                          ("bottom", "copper"): "GBL",
+                          ("bottom", "mask"): "GBS",
+                          ("bottom", "overlay"): "GBO",
+                          (None, "outline"): "GKO"}
+
 
 class OSHParkPCB(PCBArtist):
     def __init__(self, folderPath):
@@ -14,28 +22,29 @@ class OSHParkPCB(PCBArtist):
             os.makedirs(folderPath)
 
         # Initialize the gerber layers
-        for (layerSide, layerName), path, ext in self._iterateFilePaths():
+        for (layerSide, layerName), path in self._iterateFilePaths():
             self.initializeGBRLayer(path, layerName, layerSide)
 
         pth = os.path.join(self.folderPath, "drill.xln")
         self.initializeXLNLayer(pth)
 
-    def _iterateFilePaths(self):
-        layerTupleToExtension = {("top", "overlay"): "GTO",
-                                 ("top", "mask"): "GTS",
-                                 ("top", "copper"): "GTL",
-                                 ("bottom", "copper"): "GBL",
-                                 ("bottom", "mask"): "GBS",
-                                 ("bottom", "overlay"): "GBO",
-                                 (None, "outline"): "GKO"}
+    def _tupleToFilename(self, layerSide, layerName):
+        ext = _layerTupleToExtension[(layerSide, layerName)]
+        if layerSide is not None:
+            name = layerSide + "_" + layerName + "." + ext
+        else:
+            name = layerName + "." + ext
+        return os.path.join(self.folderPath, name)
 
-        for (layerSide, layerName), ext in layerTupleToExtension.items():
-            if layerSide:
-                name = layerSide + "_" + layerName + "." + ext
-            else:
-                name = layerName + "." + ext
-            path = os.path.join(self.folderPath, name)
-            yield (layerSide, layerName), path, ext
+    def getCurrentLayerFilePath(self):
+        aSide = self.getActiveSide()
+        aLayer = self.getActiveLayer()
+        return self._tupleToFilename(aSide, aLayer)
+
+    def _iterateFilePaths(self):
+        for (layerSide, layerName) in _layerTupleToExtension.keys():
+            path = self._tupleToFilename(layerSide, layerName)
+            yield (layerSide, layerName), path
 
     def hintedCircle(self, cX, cY, r, n=50):
         import numpy as np
@@ -57,9 +66,10 @@ class OSHParkPCB(PCBArtist):
 
         filenames = []
         colors = []
-        for (layerSide, layerName), path, ext in self._iterateFilePaths():
+        for (layerSide, layerName), path in self._iterateFilePaths():
             filenames.append(path)
-            colors.append(extensionToColor[ext])
+            _, ext = os.path.splitext(path)
+            colors.append(extensionToColor[ext[1:]])
 
         # Add the drill file
         colors.append("#EEEEEE")
